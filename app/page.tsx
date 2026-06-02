@@ -126,7 +126,6 @@ export default function Home() {
     if (vehicleData === undefined) {
       if (!stats) return <div className="text-center p-10 text-gray-500 font-medium">กำลังประมวลผลฐานข้อมูลสถิติภาพรวม...</div>;
 
-      // คำนวณหาค่าสูงสุดเพื่อทำเป็น Scale ความสูงสูงสุดของแท่งกราฟ (กันส่วนแบ่งเป็น 0)
       const maxCount = Math.max(...stats.monthlyStats.map((m: any) => m.count), 1);
       const maxCost = Math.max(...stats.monthlyStats.map((m: any) => m.cost), 1);
 
@@ -150,10 +149,55 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 🚀 บล็อกกราฟสรุปสถิติรายเดือนย้อนหลัง 6 เดือน (Pure Tailwind CSS) */}
+          {/* 🚀 บล็อกใหม่: ดัชนีวัดประสิทธิภาพการซ่อมบำรุง (Operational KPI) */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">⚡ ประสิทธิภาพการดำเนินงานและความเร็วในการบริการ (KPI Metrics)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* อัตราการซ่อมเสร็จทันกำหนด */}
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col justify-between">
+                <div>
+                  <span className="text-xs text-gray-500 font-medium block mb-1">ซ่อมเสร็จตามกำหนด (SLA)</span>
+                  <span className="text-2xl font-bold text-emerald-600 font-mono">{stats.efficiency.onTimeRate}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-500 h-1.5 rounded-full"></div>
+                </div>
+              </div>
+
+              {/* เวลาเฉลี่ยในการจ่ายงาน */}
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 font-medium block mb-1">เวลาเฉลี่ยในการจ่ายงานให้ช่าง</span>
+                <span className="text-2xl font-bold text-blue-600 font-mono">{stats.efficiency.avgResponseHours}</span>
+                <span className="text-xs text-gray-400 ml-1">ชั่วโมง / งาน</span>
+              </div>
+
+              {/* เวลาเฉลี่ยในการซ่อมจริง */}
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 font-medium block mb-1">เวลาเฉลี่ยที่ใช้ในการซ่อมจริง</span>
+                <span className="text-2xl font-bold text-purple-600 font-mono">{stats.efficiency.avgRepairHours}</span>
+                <span className="text-xs text-gray-400 ml-1">ชั่วโมง / งาน</span>
+              </div>
+
+              {/* งานคงค้างและล่าช้ากว่ากำหนด */}
+              <div className={`p-4 rounded-lg border flex flex-col justify-between ${stats.efficiency.overdueActiveCount > 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                <div>
+                  <span className="text-xs text-gray-500 font-medium block mb-1">งานคงค้างที่เลยกำหนดส่ง</span>
+                  <span className={`text-2xl font-bold font-mono ${stats.efficiency.overdueActiveCount > 0 ? 'text-rose-600' : 'text-gray-700'}`}>
+                    {stats.efficiency.overdueActiveCount}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">รายการ</span>
+                </div>
+                {stats.efficiency.overdueActiveCount > 0 && (
+                  <span className="text-[10px] font-bold text-rose-500 animate-pulse mt-1">⚠️ ต้องรีบดำเนินการจ่ายงานหรือเร่งช่าง</span>
+                )}
+              </div>
+
+            </div>
+          </div>
+
+          {/* กราฟสถิติรายเดือนย้อนหลัง 6 เดือน */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* กราฟที่ 1: จำนวนงานซ่อม */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">📈 จำนวนใบแจ้งซ่อมแยกรายเดือน (6 เดือนล่าสุด)</h3>
               <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
@@ -164,10 +208,7 @@ export default function Home() {
                       <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-50 px-1.5 py-0.5 rounded shadow-2xs mb-1">
                         {item.count} งาน
                       </span>
-                      <div 
-                        style={{ height: `${Math.max(heightPercent, 6)}%` }} 
-                        className="w-full rounded-t bg-blue-500 hover:bg-blue-600 transition-all shadow-xs group-hover:scale-x-105"
-                      ></div>
+                      <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t bg-blue-500 hover:bg-blue-600 transition-all shadow-xs group-hover:scale-x-105"></div>
                       <span className="text-xs text-gray-500 truncate font-medium max-w-full">{item.label}</span>
                     </div>
                   );
@@ -175,7 +216,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* กราฟที่ 2: สรุปค่าใช้จ่าย */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">💰 ยอดค่าใช้จ่ายรวมสุทธิรายเดือน (6 เดือนล่าสุด)</h3>
               <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
@@ -186,20 +226,16 @@ export default function Home() {
                       <span className="text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-50 px-1 py-0.5 rounded shadow-2xs mb-1 truncate max-w-[120%]">
                         {item.cost.toLocaleString()} ฿
                       </span>
-                      <div 
-                        style={{ height: `${Math.max(heightPercent, 6)}%` }} 
-                        className="w-full rounded-t bg-emerald-500 hover:bg-emerald-600 transition-all shadow-xs group-hover:scale-x-105"
-                      ></div>
+                      <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t bg-emerald-500 hover:bg-emerald-600 transition-all shadow-xs group-hover:scale-x-105"></div>
                       <span className="text-xs text-gray-500 truncate font-medium max-w-full">{item.label}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
-
           </div>
 
-          {/* สรุปแบบกลุ่มด้านล่าง */}
+          {/* สรุปแบบกลุ่มสถานะและความเร่งด่วน */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>

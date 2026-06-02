@@ -15,7 +15,7 @@ export async function searchVehicleByPlate(plate: string) {
   }
 }
 
-// 2. ฟังก์ชันดึงสถิติภาพรวม + สถิติรายเดือน (อัปเดตเพิ่มกราฟรายเดือน)
+// 2. ฟังก์ชันดึงสถิติภาพรวม + กราฟรายเดือน + ประสิทธิภาพ KPI
 export async function getDashboardStats() {
   try {
     const totalVehicles = await prisma.vehicle.count();
@@ -25,7 +25,7 @@ export async function getDashboardStats() {
     const priorityGroups = await prisma.maintenanceLog.groupBy({ by: ['priority'], _count: { id: true } });
     const costAgg = await prisma.maintenanceLog.aggregate({ _sum: { cost: true } });
 
-    // 🚀 คำนวณสถิติย้อนหลัง 6 เดือนล่าสุดสำหรับทำกราฟ
+    // --- ส่วนที่ 1: คำนวณสถิติย้อนหลัง 6 เดือนล่าสุดสำหรับทำกราฟ ---
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
@@ -36,18 +36,16 @@ export async function getDashboardStats() {
       select: { reportedAt: true, cost: true }
     });
 
-    // เตรียมโครงสร้างเดือนย้อนหลัง 6 เดือน
     const monthlyMap = new Map();
     for (let i = 0; i < 6; i++) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
       const monthLabel = d.toLocaleString('th-TH', { month: 'short' });
-      const yearLabel = d.getFullYear() + 543; // แปลงเป็น พ.ศ. ให้คนไทยอ่านง่าย
+      const yearLabel = d.getFullYear() + 543;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       monthlyMap.set(key, { label: `${monthLabel} ${String(yearLabel).substring(2)}`, count: 0, cost: 0 });
     }
 
-    // นำข้อมูลใบแจ้งซ่อมจริงลงล็อกเดือน
     for (const log of recentLogs) {
       if (!log.reportedAt) continue;
       const logDate = new Date(log.reportedAt);
@@ -59,9 +57,69 @@ export async function getDashboardStats() {
         monthlyMap.set(key, current);
       }
     }
-
-    // แปลง Map กลับเป็น Array และเรียงจากเดือนเก่าไปเดือนใหม่
     const monthlyStats = Array.from(monthlyMap.values()).reverse();
+
+    // --- 🚀 ส่วนที่ 2: คำนวณประสิทธิภาพการทำงาน (Efficiency Metrics KPI) ---
+    const allLogs = await prisma.maintenanceLog.findMany({
+      select: {
+        status: true,
+        reportedAt: true,
+        assignedAt: true,
+        startedAt: true,
+        completedAt: true,
+        dueDate: true,
+      }
+    });
+
+    let totalCompleted = 0;
+    let onTimeCompleted = 0;
+    let totalResponseTimeMs = 0;
+    let responseCount = 0;
+    let totalRepairTimeMs = 0;
+    let repairCount = 0;
+    let overdueActiveCount = 0;
+
+    const now = new Date();
+
+    for (const log of allLogs) {
+      // 1. หาอัตราการซ่อมเสร็จทันกำหนด (เปรียบเทียบ completedAt กับ dueDate)
+      if (log.status === 'completed' && log.completedAt) {
+        totalCompleted++;
+        if (log.dueDate && new Date(log.completedAt) <= new Date(log.dueDate)) {
+          onTimeCompleted++;
+        }
+      }
+
+      // 2. หาเวลาเฉลี่ยในการจ่ายงาน (reportedAt -> assignedAt)
+      if (log.reportedAt && log.assignedAt) {
+        const diff = new Date(log.assignedAt).getTime() - new Date(log.reportedAt).getTime();
+        if (diff >= 0) {
+          totalResponseTimeMs += diff;
+          responseCount++;
+        }
+      }
+
+      // 3. หาเวลาเฉลี่ยที่ใช้ในการซ่อมจริง (startedAt -> completedAt)
+      if (log.status === 'completed' && log.startedAt && log.completedAt) {
+        const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
+        if (diff >= 0) {
+          totalRepairTimeMs += diff;
+          repairCount++;
+        }
+      }
+
+      // 4. หางานคงค้างที่ล่าช้ากว่ากำหนด (ยังไม่เสร็จ, ไม่ถูกยกเลิก และเลย dueDate แล้ว)
+      if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
+        if (now > new Date(log.dueDate)) {
+          overdueActiveCount++;
+        }
+      }
+    }
+
+    // แปลงมิลลิวินาทีให้กลายเป็นชั่วโมง
+    const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
+    const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
+    const onTimeRate = totalCompleted > 0 ? (onTimeCompleted / totalCompleted) * 100 : 0;
 
     return {
       totalVehicles,
@@ -69,7 +127,14 @@ export async function getDashboardStats() {
       statusCounts: statusGroups.map((s: any) => ({ status: s.status, count: s._count.id })),
       priorityCounts: priorityGroups.map((p: any) => ({ priority: p.priority, count: p._count.id })),
       totalCost: costAgg._sum.cost || 0,
-      monthlyStats // ส่งข้อมูลนี้ไปวาดกราฟ
+      monthlyStats,
+      // ส่งข้อมูล KPI ออกไปหน้าบ้าน
+      efficiency: {
+        onTimeRate: Math.round(onTimeRate * 10) / 10, // ทศนิยม 1 ตำแหน่ง
+        avgResponseHours: Math.round(avgResponseHours * 10) / 10,
+        avgRepairHours: Math.round(avgRepairHours * 10) / 10,
+        overdueActiveCount
+      }
     };
   } catch (error) {
     console.error("Stats Error:", error);
@@ -77,18 +142,14 @@ export async function getDashboardStats() {
   }
 }
 
-// 3. ฟังก์ชันนำเข้าข้อมูล (Bulk Insert)
+// 3. ฟังก์ชันนำเข้าข้อมูล (Bulk Insert เหมือนเดิม)
 export async function importMaintenanceData(rows: any[]) {
   try {
     const validRows = rows.filter(r => r.plate);
     if (validRows.length === 0) return { success: false, message: "ไม่พบข้อมูลรถในไฟล์" };
 
     const uniquePlates = [...new Set(validRows.map(r => String(r.plate).trim()))];
-
-    let existingVehicles = await prisma.vehicle.findMany({
-      where: { plate: { in: uniquePlates } }
-    });
-    
+    let existingVehicles = await prisma.vehicle.findMany({ where: { plate: { in: uniquePlates } } });
     const existingPlates = new Set(existingVehicles.map((v: any) => v.plate));
 
     const vehiclesToCreate = [];
