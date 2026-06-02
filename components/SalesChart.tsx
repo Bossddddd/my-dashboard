@@ -36,7 +36,7 @@ export default function SalesChart() {
 
         // จำลองการแปลงข้อมูลให้ตรงกับ Type ที่เราต้องการวาดกราฟ
         const mockData: SalesData[] = [
-          { id: "1", month: "ม.ค.", amount: 4000 },
+          { id: "1", month: "ม.ค.", amount: 500000000000000 },
           { id: "2", month: "ก.พ.", amount: 3000 },
           { id: "3", month: "มี.ค.", amount: 5000 },
         ];
