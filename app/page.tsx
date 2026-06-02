@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
-import { searchVehicleByPlate, getDashboardStats } from "./actions"; // นำเข้าฟังก์ชันดึงสถิติ
+import { searchVehicleByPlate, getDashboardStats } from "./actions";
 
-// === Types & Interfaces ===
 type MaintenanceStatus = 'reported' | 'assigned' | 'in_progress' | 'blocked' | 'awaiting_qa' | 'completed' | 'cancelled';
 type MaintenancePriority = 'low' | 'normal' | 'high' | 'urgent';
 
@@ -39,7 +38,6 @@ interface VehicleRecord {
   maintenanceHistory: MaintenanceLog[];
 }
 
-// === ตัวช่วยแปลภาษาและสี ===
 const STATUS_CONFIG: Record<string, { text: string, color: string }> = {
   reported: { text: "แจ้งแล้ว", color: "bg-gray-100 text-gray-700 border-gray-200" },
   assigned: { text: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-700 border-blue-200" },
@@ -58,39 +56,34 @@ const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
 };
 
 const getStatusBadge = (status: MaintenanceStatus) => {
-  const config = STATUS_CONFIG[status] || { text: status, color: "bg-gray-100 text-gray-700 border-gray-200" };
+  const config = STATUS_CONFIG[status] || { text: status, color: "bg-gray-100 border-gray-200" };
   return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${config.color}`}>{config.text}</span>;
 };
 
 const getPriorityBadge = (priority: MaintenancePriority) => {
-  const config = PRIORITY_CONFIG[priority] || { text: priority, color: "bg-gray-50 text-gray-600 border-gray-200" };
+  const config = PRIORITY_CONFIG[priority] || { text: priority, color: "bg-gray-50 border-gray-200" };
   return <span className={`px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>{config.text}</span>;
 };
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return <span className="text-gray-400">ยังไม่มีข้อมูล</span>;
   return new Date(dateStr).toLocaleString('th-TH', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   }) + " น.";
 };
-
-// ======================================================
 
 export default function Home() {
   const [vehicleData, setVehicleData] = useState<VehicleRecord | null | undefined>(undefined);
   const [stats, setStats] = useState<any>(null);
 
-  // โหลดข้อมูลสถิติตอนเปิดเว็บครั้งแรก
   useEffect(() => {
     const loadStats = async () => {
       const data = await getDashboardStats();
       if (data) setStats(data);
     };
     loadStats();
-  }, []); // [] หมายถึงทำแค่ครั้งเดียวตอนเปิดหน้าเว็บ
+  }, []);
 
-  // ฟังก์ชันค้นหาข้อมูล (ถ้าค้นหา จะซ่อนหน้าสถิติและแสดงข้อมูลรถ)
   const handleSearchData = async (plate: string) => {
     setVehicleData(undefined); 
     const foundData = await searchVehicleByPlate(plate);
@@ -129,38 +122,88 @@ export default function Home() {
     }
   };
 
-  // === เรนเดอร์เนื้อหาหลัก ===
   const renderContent = () => {
-    // 1. หน้าจอเริ่มต้น (ยังไม่ได้ค้นหา) -> แสดง Dashboard สถิติ
     if (vehicleData === undefined) {
-      if (!stats) return <div className="text-center p-10 text-gray-500">กำลังโหลดสถิติภาพรวม...</div>;
+      if (!stats) return <div className="text-center p-10 text-gray-500 font-medium">กำลังประมวลผลฐานข้อมูลสถิติภาพรวม...</div>;
+
+      // คำนวณหาค่าสูงสุดเพื่อทำเป็น Scale ความสูงสูงสุดของแท่งกราฟ (กันส่วนแบ่งเป็น 0)
+      const maxCount = Math.max(...stats.monthlyStats.map((m: any) => m.count), 1);
+      const maxCost = Math.max(...stats.monthlyStats.map((m: any) => m.cost), 1);
 
       return (
-        <div className="flex flex-col gap-6 animate-fade-in">
+        <div className="flex flex-col gap-6">
           <h1 className="text-2xl font-bold text-gray-800">📊 สถิติภาพรวมระบบแจ้งซ่อม</h1>
           
-          {/* การ์ดสรุปยอดด้านบน */}
+          {/* การ์ดสรุปยอด */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
               <div className="text-gray-500 text-sm font-medium mb-1">รถยนต์ในระบบทั้งหมด</div>
               <div className="text-4xl font-bold text-blue-600">{stats.totalVehicles} <span className="text-lg text-gray-400 font-normal">คัน</span></div>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
               <div className="text-gray-500 text-sm font-medium mb-1">ใบแจ้งซ่อมทั้งหมด</div>
               <div className="text-4xl font-bold text-orange-500">{stats.totalLogs} <span className="text-lg text-gray-400 font-normal">รายการ</span></div>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center items-center text-center">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
               <div className="text-gray-500 text-sm font-medium mb-1">ยอดค่าซ่อมรวมสุทธิ</div>
               <div className="text-4xl font-bold text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-lg text-gray-400 font-normal">บาท</span></div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
-            {/* สรุปตามสถานะ */}
+          {/* 🚀 บล็อกกราฟสรุปสถิติรายเดือนย้อนหลัง 6 เดือน (Pure Tailwind CSS) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* กราฟที่ 1: จำนวนงานซ่อม */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">📈 จำนวนใบแจ้งซ่อมแยกรายเดือน (6 เดือนล่าสุด)</h3>
+              <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
+                {stats.monthlyStats.map((item: any, idx: number) => {
+                  const heightPercent = (item.count / maxCount) * 100;
+                  return (
+                    <div key={idx} className="flex flex-1 flex-col items-center gap-2 h-full justify-end group">
+                      <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-50 px-1.5 py-0.5 rounded shadow-2xs mb-1">
+                        {item.count} งาน
+                      </span>
+                      <div 
+                        style={{ height: `${Math.max(heightPercent, 6)}%` }} 
+                        className="w-full rounded-t bg-blue-500 hover:bg-blue-600 transition-all shadow-xs group-hover:scale-x-105"
+                      ></div>
+                      <span className="text-xs text-gray-500 truncate font-medium max-w-full">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* กราฟที่ 2: สรุปค่าใช้จ่าย */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">💰 ยอดค่าใช้จ่ายรวมสุทธิรายเดือน (6 เดือนล่าสุด)</h3>
+              <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
+                {stats.monthlyStats.map((item: any, idx: number) => {
+                  const heightPercent = (item.cost / maxCost) * 100;
+                  return (
+                    <div key={idx} className="flex flex-1 flex-col items-center gap-2 h-full justify-end group">
+                      <span className="text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-50 px-1 py-0.5 rounded shadow-2xs mb-1 truncate max-w-[120%]">
+                        {item.cost.toLocaleString()} ฿
+                      </span>
+                      <div 
+                        style={{ height: `${Math.max(heightPercent, 6)}%` }} 
+                        className="w-full rounded-t bg-emerald-500 hover:bg-emerald-600 transition-all shadow-xs group-hover:scale-x-105"
+                      ></div>
+                      <span className="text-xs text-gray-500 truncate font-medium max-w-full">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
+          {/* สรุปแบบกลุ่มด้านล่าง */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
               <div className="flex flex-col gap-3">
-                {stats.statusCounts.length === 0 ? <p className="text-gray-400 text-sm">ยังไม่มีข้อมูล</p> : null}
                 {stats.statusCounts.map((item: any) => {
                   const config = STATUS_CONFIG[item.status] || { text: item.status, color: "bg-gray-100" };
                   return (
@@ -176,11 +219,9 @@ export default function Home() {
               </div>
             </div>
 
-            {/* สรุปตามความเร่งด่วน */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">สรุปตามความเร่งด่วน (Priority)</h3>
               <div className="flex flex-col gap-3">
-                {stats.priorityCounts.length === 0 ? <p className="text-gray-400 text-sm">ยังไม่มีข้อมูล</p> : null}
                 {stats.priorityCounts.map((item: any) => {
                   const config = PRIORITY_CONFIG[item.priority] || { text: item.priority, color: "bg-gray-100" };
                   return (
@@ -200,7 +241,6 @@ export default function Home() {
       );
     }
 
-    // 2. ค้นหาแล้ว แต่ไม่พบข้อมูล
     if (vehicleData === null) {
       return (
         <div className="flex h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-red-200 bg-red-50 p-10 text-center shadow-sm">
@@ -211,7 +251,6 @@ export default function Home() {
       );
     }
 
-    // 3. ค้นพบข้อมูลรถ (หน้าประวัติการซ่อมเหมือนเดิม)
     return (
       <div className="flex flex-col gap-6">
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
