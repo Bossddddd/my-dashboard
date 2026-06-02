@@ -5,8 +5,8 @@ export default function TasksPage() {
       
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <p className="text-gray-500">
-          นี่คือหน้าที่ 2 พื้นที่ตรงนี้คือ `{children}` ที่เปลี่ยนไปตาม URL
-          แต่สังเกตว่าแถบด้านบนและด้านซ้ายจะไม่กระพริบเลย
+          นี่คือหน้าที่ 2 พื้นที่ตรงนี้คือหน้า Content ที่เปลี่ยนไปตาม URL
+แต่สังเกตว่าแถบด้านบนและด้านซ้ายจะไม่กระพริบเลย
         </p>
         
         <div className="mt-6 flex flex-col gap-3">
