@@ -53,7 +53,7 @@ export default function Home() {
     // เคลียร์ข้อมูลเดิมออกก่อนระหว่างรอ Database โหลด
     setVehicleData(undefined); 
     
-    // เรียกใช้ Server Action เพื่อค้นหาจาก SQLite
+    // เรียกใช้ Server Action เพื่อค้นหา
     const foundData = await searchVehicleByPlate(plate);
 
     if (foundData) {
@@ -107,18 +107,12 @@ export default function Home() {
     // กรณีที่ 3: ค้นพบข้อมูล (แสดงประวัติการซ่อม)
     return (
       <div className="flex flex-col gap-6">
-        {/* กล่องข้อมูลรถ */}
-        <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{vehicleData.vehiclePlate}</h2>
-            <p className="mt-1 text-gray-500">
-              {vehicleData.brand} {vehicleData.model} (รหัสรถ: {vehicleData.vehicleId})
-            </p>
-          </div>
-          
-          <button className="rounded-lg bg-blue-50 px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-100">
-            + สร้างใบแจ้งซ่อมใหม่
-          </button>
+        {/* กล่องข้อมูลรถ (นำปุ่มสร้างใบแจ้งซ่อมออกแล้ว) */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-900">{vehicleData.vehiclePlate}</h2>
+          <p className="mt-1 text-gray-500">
+            {vehicleData.brand} {vehicleData.model} (รหัสรถ: {vehicleData.vehicleId})
+          </p>
         </div>
 
         {/* รายการประวัติการซ่อม */}
