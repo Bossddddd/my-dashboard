@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Navbar from "../components/Navbar";
-import ImportButton from "../components/ImportButton"; // นำเข้า Component ปุ่ม Import
-import { searchVehicleByPlate } from "./actions";
+import { searchVehicleByPlate } from "./actions"; // นำเข้า Server Action
 
 // === 1. Types & Interfaces ===
 type MaintenanceStatus = 'reported' | 'assigned' | 'in_progress' | 'blocked' | 'awaiting_qa' | 'completed' | 'cancelled';
@@ -69,7 +68,6 @@ export default function Home() {
           priority: log.priority as MaintenancePriority,
           status: log.status as MaintenanceStatus,
           description: log.description,
-          // SQLite เก็บ array ไม่ได้ มักจะเก็บเป็น string คั่นด้วยลูกน้ำ เราจึงนำมา split กลับเป็น Array
           symptoms: log.symptoms ? log.symptoms.split(',') : [],
           reportedAt: log.reportedAt.toISOString(),
           completedAt: log.completedAt ? log.completedAt.toISOString() : undefined,
@@ -90,7 +88,7 @@ export default function Home() {
         <div className="flex h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white p-10 text-center shadow-sm">
           <div className="mb-3 text-4xl">🚗</div>
           <h2 className="text-xl font-medium text-gray-600">ยินดีต้อนรับสู่ระบบแจ้งซ่อม</h2>
-          <p className="mt-2 text-gray-400">กรุณาพิมพ์เลขทะเบียนรถในช่องค้นหาด้านบน</p>
+          <p className="mt-2 text-gray-400">กรุณาพิมพ์เลขทะเบียนรถในช่องค้นหาด้านบน หรือ นำเข้าไฟล์ข้อมูล</p>
         </div>
       );
     }
@@ -118,13 +116,9 @@ export default function Home() {
             </p>
           </div>
           
-          {/* นำ ImportButton มาวางคู่กับปุ่มสร้างใบแจ้งซ่อม */}
-          <div className="flex gap-2">
-            <ImportButton />
-            <button className="rounded-lg bg-blue-50 px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-100">
-              + สร้างใบแจ้งซ่อมใหม่
-            </button>
-          </div>
+          <button className="rounded-lg bg-blue-50 px-4 py-2 font-medium text-blue-700 transition hover:bg-blue-100">
+            + สร้างใบแจ้งซ่อมใหม่
+          </button>
         </div>
 
         {/* รายการประวัติการซ่อม */}
