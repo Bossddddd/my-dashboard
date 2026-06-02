@@ -20,17 +20,26 @@ model Vehicle {
   logs      MaintenanceLog[]
 }
 
-// ตารางเก็บประวัติการแจ้งซ่อม
+// ตารางเก็บประวัติการแจ้งซ่อม (รองรับครบทุกฟิลด์)
 model MaintenanceLog {
   id             Int       @id @default(autoincrement())
-  priority       String
-  status         String
-  description    String
-  symptoms       String?
-  reportedAt     DateTime  @default(now())
-  completedAt    DateTime?
-  cost           Float?
-  technicianName String?
+  priority       String    // low, normal, high, urgent
+  status         String    // reported, assigned, in_progress, etc.
+  description    String    // อาการที่แจ้ง
+  symptoms       String?   // เก็บเป็น string คั่นด้วยลูกน้ำ เช่น "แอร์ไม่เย็น,มีเสียงดัง"
+  projectId      Int?      // ID โครงการ
+  projectName    String?   // ชื่อโครงการ
+  workshopName   String?   // อู่ / ศูนย์ซ่อม
+  technicianName String?   // ชื่อช่าง
+  category       String?   // ประเภทงานซ่อม
+  locationLabel  String?   // จุดที่จอดซ่อม
+  reportedAt     DateTime  @default(now()) // เวลาที่รับแจ้ง
+  assignedAt     DateTime? // เวลามอบหมายช่าง
+  acceptedAt     DateTime? // เวลาช่างรับงาน
+  startedAt      DateTime? // เวลาเริ่มซ่อม
+  completedAt    DateTime? // เวลาซ่อมเสร็จ
+  dueDate        DateTime? // กำหนดเสร็จ
+  cost           Float?    // ค่าซ่อม
 
   vehicleId      Int
   vehicle        Vehicle   @relation(fields: [vehicleId], references: [id])
