@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import ImportButton from "./ImportButton"; // นำเข้า Component ปุ่ม Import มาใช้ที่นี่แทน
+import ImportButton from "./ImportButton";
 
-// กำหนด Type ของ Props
 interface NavbarProps {
   onSearch: (plate: string) => void;
 }
@@ -22,10 +21,14 @@ export default function Navbar({ onSearch }: NavbarProps) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm z-10">
       
-      {/* โลโก้ / ชื่อโปรเจกต์ */}
-      <div className="text-xl font-bold text-gray-800">
+      {/* โลโก้ / ชื่อโปรเจกต์ (ปรับเป็นลิงก์เพื่อให้กดกลับหน้า Home ได้) */}
+      <a 
+        href="/" 
+        className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors cursor-pointer"
+        title="กลับหน้าหลัก"
+      >
         Maintenance-Dashboard
-      </div>
+      </a>
       
       {/* พื้นที่ด้านขวา: ช่องค้นหา + ปุ่มนำเข้าไฟล์ */}
       <div className="flex items-center gap-4">
@@ -50,7 +53,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
         {/* เส้นคั่นบางๆ */}
         <div className="h-8 w-px bg-gray-200"></div>
 
-        {/* ปุ่มนำเข้า Excel/CSV อยู่ตรงนี้ตลอดเวลา */}
+        {/* ปุ่มนำเข้า Excel/CSV */}
         <ImportButton />
 
       </div>
