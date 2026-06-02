@@ -1,0 +1,38 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ตารางเก็บข้อมูลรถ (1 คัน มีได้หลายการซ่อม)
+model Vehicle {
+  id        Int      @id @default(autoincrement()) // รหัสรถ รันอัตโนมัติ
+  plate     String   @unique                       // ทะเบียนรถ (ห้ามซ้ำ)
+  brand     String?
+  model     String?
+  
+  // ความสัมพันธ์ (Relation) ชี้ไปยังตาราง MaintenanceLog
+  logs      MaintenanceLog[]
+}
+
+// ตารางเก็บประวัติการแจ้งซ่อม
+model MaintenanceLog {
+  id             Int       @id @default(autoincrement()) // เลขที่ใบแจ้งซ่อม
+  priority       String    // low, normal, high, urgent
+  status         String    // reported, assigned, in_progress, etc.
+  description    String    // อาการที่แจ้ง
+  symptoms       String?   // เก็บเป็นข้อความยาว (เช่น "แอร์ไม่เย็น, เสียงดัง")
+  reportedAt     DateTime  @default(now()) // บันทึกเวลาที่แจ้งอัตโนมัติ
+  completedAt    DateTime?
+  cost           Float?
+  technicianName String?
+
+  // ความสัมพันธ์กลับไปยังตาราง Vehicle
+  vehicleId      Int
+  vehicle        Vehicle   @relation(fields: [vehicleId], references: [id])
+}
