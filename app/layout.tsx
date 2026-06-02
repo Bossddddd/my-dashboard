@@ -50,13 +50,25 @@ export default function RootLayout({
             
             {/* ลิงก์เมนูต่างๆ (ใช้ next/link เพื่อเปลี่ยนหน้าโดยไม่โหลดเว็บใหม่) */}
             <Link href="/" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
-              📊 หน้าหลัก (Dashboard)
+              หน้าหลัก (Dashboard)
+            </Link>
+            <Link href="my-dashboard/components/Report.tsx" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
+              แจ้งซ่อม
             </Link>
             <Link href="/tasks" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
-              🔧 งานซ่อมบำรุง
+              ลิสรายการซ่อมบำรุง
+            </Link>
+            <Link href="/tasks" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
+              มอบหมายงานให้ช่าง
+            </Link>
+            <Link href="/tasks" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
+              ตรวจงาน
+            </Link>
+            <Link href="/tasks" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
+              รายการวัสดุที่ต้องใช้
             </Link>
             <Link href="/settings" className="px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:text-blue-700 text-gray-700 font-medium transition-colors">
-              ⚙️ ตั้งค่าระบบ
+              ตั้งค่าระบบ
             </Link>
           </aside>
 
