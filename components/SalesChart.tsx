@@ -36,7 +36,7 @@ export default function SalesChart() {
 
         // จำลองการแปลงข้อมูลให้ตรงกับ Type ที่เราต้องการวาดกราฟ
         const mockData: SalesData[] = [
-          { id: "1", month: "ม.ค.", amount: 500000000000000 },
+          { id: "1", month: "ม.ค.", amount: 10000 },
           { id: "2", month: "ก.พ.", amount: 3000 },
           { id: "3", month: "มี.ค.", amount: 5000 },
         ];
@@ -78,7 +78,7 @@ export default function SalesChart() {
   // 5. Render กราฟและรายการ (Tailwind CSS + Recharts)
   return (
     <div className="w-full rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-xl font-semibold text-gray-800">ยอดขายรายเดือน</h2>
+      <h2 className="mb-4 text-xl font-semibold text-gray-800">ยอดซ่อมรายเดือน</h2>
       
       {/* Recharts Component */}
       <div className="h-72 w-full">
@@ -98,7 +98,7 @@ export default function SalesChart() {
           <div key={item.id} className="rounded-lg bg-blue-50 p-3 text-center">
             <span className="block text-sm text-gray-500">{item.month}</span>
             <span className="block font-mono text-lg font-bold text-blue-700">
-              {item.amount.toLocaleString()} ฿
+              {item.amount.toLocaleString()} รายการ
             </span>
           </div>
         ))}
