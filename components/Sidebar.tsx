@@ -12,7 +12,6 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
   return (
     <aside className="w-full h-full bg-white border-r border-gray-200 flex flex-col shadow-sm">
-      {/* เมนู */}
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-3">
         <MenuItem icon="📊" label="แดชบอร์ดภาพรวม" />
         <MenuItem icon="🏢" label="โครงการ" />
@@ -21,7 +20,6 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         <MenuItem icon="🗺️" label="การเดินรถ" hasArrow />
         <MenuItem icon="🪪" label="คนขับรถ" hasArrow />
         
-        {/* หมวดหมู่ซ่อมบำรุง */}
         <div className="mt-2">
           <button 
             onClick={() => setIsMaintenanceOpen(!isMaintenanceOpen)}
@@ -36,25 +34,18 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           
           {isMaintenanceOpen && (
             <div className="mt-1 flex flex-col gap-1 pl-4">
-              {/* 🚀 เมนู 1: Dashboard การซ่อมบำรุง */}
               <div 
                 onClick={() => setActiveTab('dashboard')}
                 className={`px-3 py-2 text-sm font-bold rounded-lg border-l-4 cursor-pointer transition-all ${
-                  activeTab === 'dashboard' 
-                    ? 'text-[#0B603A] bg-emerald-50 border-[#0B603A]' 
-                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 border-transparent'
+                  activeTab === 'dashboard' ? 'text-[#0B603A] bg-emerald-50 border-[#0B603A]' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 border-transparent'
                 }`}
               >
                 Dashboard การซ่อมบำรุง
               </div>
-              
-              {/* 🚀 เมนู 2: อู่/ศูนย์ซ่อม */}
               <div 
                 onClick={() => setActiveTab('workshops')}
                 className={`px-3 py-2 text-sm font-bold rounded-lg border-l-4 cursor-pointer transition-all ${
-                  activeTab === 'workshops' 
-                    ? 'text-[#0B603A] bg-emerald-50 border-[#0B603A]' 
-                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 border-transparent'
+                  activeTab === 'workshops' ? 'text-[#0B603A] bg-emerald-50 border-[#0B603A]' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 border-transparent'
                 }`}
               >
                 อู่/ศูนย์ซ่อม
@@ -74,9 +65,7 @@ function MenuItem({ icon, label, hasArrow }: { icon: string, label: string, hasA
         <span className="text-lg grayscale opacity-70">{icon}</span>
         <span>{label}</span>
       </div>
-      {hasArrow && (
-        <svg className="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-      )}
+      {hasArrow && <svg className="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>}
     </div>
   );
 }

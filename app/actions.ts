@@ -1,4 +1,4 @@
-"use server"; // บังคับทำงานบน Server เท่านั้น
+"use server";
 
 import { prisma } from "../lib/prisma";
 
@@ -20,7 +20,6 @@ export async function searchVehicleByPlate(plate: string) {
   }
 }
 
-// 🚀 ฟังก์ชันดึงสถิติภาพรวม + วิเคราะห์ข้อมูลแยกรายอู่/ศูนย์ซ่อม
 export async function getDashboardStats() {
   try {
     const totalVehicles = await prisma.vehicle.count();
@@ -30,7 +29,6 @@ export async function getDashboardStats() {
     const priorityGroups = await prisma.maintenanceLog.groupBy({ by: ['priority'], _count: { id: true } });
     const costAgg = await prisma.maintenanceLog.aggregate({ _sum: { cost: true } });
 
-    // สถิติรายเดือนย้อนหลัง 6 เดือน
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
@@ -64,7 +62,6 @@ export async function getDashboardStats() {
     }
     const monthlyStats = Array.from(monthlyMap.values()).reverse();
 
-    // ดึงข้อมูลประวัติทั้งหมดเพื่อนำมาคำนวณระดับประสิทธิภาพทั่วไปและคัดแยกตามอู่
     const allLogs = await prisma.maintenanceLog.findMany({
       select: { 
         id: true, status: true, priority: true, description: true, technicianName: true,
@@ -82,11 +79,10 @@ export async function getDashboardStats() {
     let overdueActiveCount = 0;
     
     const overdueTasks = [];
-    const workshopMap = new Map(); // 🚀 Map สำหรับจัดกลุ่มตามชื่ออู่
+    const workshopMap = new Map(); 
     const now = new Date();
 
     for (const log of allLogs) {
-      // 1. คำนวณภาพรวมระบบ
       if (log.status === 'completed' && log.completedAt) {
         totalCompleted++;
         if (log.dueDate && new Date(log.completedAt) <= new Date(log.dueDate)) {
@@ -111,36 +107,24 @@ export async function getDashboardStats() {
         }
       }
 
-      // 🚀 2. คัดแยกและคำนวณสถิติละเอียดรายอู่/ศูนย์ซ่อม
       const rawWorkshop = log.workshopName ? log.workshopName.trim() : "";
-      if (rawWorkshop !== "") { // นับเฉพาะข้อมูลที่มีระบุชื่ออู่ชัดเจน
+      if (rawWorkshop !== "") {
         if (!workshopMap.has(rawWorkshop)) {
           workshopMap.set(rawWorkshop, {
-            name: rawWorkshop,
-            totalJobs: 0,
-            completedOnTime: 0,   // ซ่อมสำเร็จทันกำหนด
-            completedLate: 0,     // ซ่อมสำเร็จแต่ล่าช้ากว่ากำหนด
-            inProgress: 0,         // กำลังซ่อมอยู่
-            overdueActive: 0,     // งานค้างดองเค็มจนเลยกำหนดส่ง
-            totalRepairTimeMs: 0,
-            repairCount: 0
+            name: rawWorkshop, totalJobs: 0, completedOnTime: 0, completedLate: 0, 
+            inProgress: 0, overdueActive: 0, totalRepairTimeMs: 0, repairCount: 0
           });
         }
-
         const wStats = workshopMap.get(rawWorkshop);
         wStats.totalJobs++;
 
         if (log.status === 'completed') {
           if (log.dueDate && log.completedAt) {
-            if (new Date(log.completedAt) <= new Date(log.dueDate)) {
-              wStats.completedOnTime++;
-            } else {
-              wStats.completedLate++;
-            }
+            if (new Date(log.completedAt) <= new Date(log.dueDate)) { wStats.completedOnTime++; } 
+            else { wStats.completedLate++; }
           } else {
-            wStats.completedOnTime++; // fallback
+            wStats.completedOnTime++; 
           }
-
           if (log.startedAt && log.completedAt) {
             const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
             if (diff >= 0) { wStats.totalRepairTimeMs += diff; wStats.repairCount++; }
@@ -148,12 +132,8 @@ export async function getDashboardStats() {
         } else if (log.status === 'in_progress') {
           wStats.inProgress++;
         }
-
-        // งานคงค้างที่ดองเกินกำหนดส่งของอู่นั้นๆ
         if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
-          if (now > new Date(log.dueDate)) {
-            wStats.overdueActive++;
-          }
+          if (now > new Date(log.dueDate)) { wStats.overdueActive++; }
         }
       }
     }
@@ -164,26 +144,19 @@ export async function getDashboardStats() {
     const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
     const onTimeRate = totalCompleted > 0 ? (onTimeCompleted / totalCompleted) * 100 : 0;
 
-    // 🚀 แปลงโครงสร้างข้อมูลอู่เพื่อส่งออกไปวาดหน้า Dashboard รายอู่
     const workshopsData = Array.from(workshopMap.values()).map((w: any) => {
       const totalClosed = w.completedOnTime + w.completedLate;
       const efficiencyRate = totalClosed > 0 ? (w.completedOnTime / totalClosed) * 100 : 0;
       const avgRepairHoursW = w.repairCount > 0 ? (w.totalRepairTimeMs / (1000 * 60 * 60)) / w.repairCount : 0;
-
       return {
-        name: w.name,
-        totalJobs: w.totalJobs,
-        successCount: w.completedOnTime, // สำเร็จ (ในเวลา)
-        lateCount: w.completedLate + w.overdueActive, // ล่าช้า (ส่งเลท + ค้างเน่า)
-        inProgressCount: w.inProgress, // กำลังซ่อมอยู่
-        efficiencyRate: Math.round(efficiencyRate * 10) / 10, // ประสิทธิภาพ SLA อู่
-        avgRepairHours: Math.round(avgRepairHoursW * 10) / 10  // ความเร็วเฉลี่ยในการซ่อม
+        name: w.name, totalJobs: w.totalJobs, successCount: w.completedOnTime, 
+        lateCount: w.completedLate + w.overdueActive, inProgressCount: w.inProgress, 
+        efficiencyRate: Math.round(efficiencyRate * 10) / 10, avgRepairHours: Math.round(avgRepairHoursW * 10) / 10 
       };
     });
 
     return {
-      totalVehicles,
-      totalLogs,
+      totalVehicles, totalLogs,
       statusCounts: statusGroups.map((s: any) => ({ status: s.status, count: s._count.id })),
       priorityCounts: priorityGroups.map((p: any) => ({ priority: p.priority, count: p._count.id })),
       totalCost: costAgg._sum.cost || 0,
@@ -194,8 +167,7 @@ export async function getDashboardStats() {
         avgRepairHours: Math.round(avgRepairHours * 10) / 10,
         overdueActiveCount
       },
-      overdueTasks,
-      workshopsData // 🚀 ส่งข้อมูลสรุปสถิติมัดรวมของแต่ละอู่ออกไป
+      overdueTasks, workshopsData
     };
   } catch (error) {
     console.error("Stats Error:", error);
@@ -203,7 +175,6 @@ export async function getDashboardStats() {
   }
 }
 
-// ฟังก์ชันนำเข้าข้อมูล (เหมือนเดิม)
 export async function importMaintenanceData(rows: any[]) {
   try {
     const cleanRows = rows.map(row => {
@@ -227,11 +198,7 @@ export async function importMaintenanceData(rows: any[]) {
     for (const row of validRows) {
       const plate = String(row.plate).trim();
       if (!existingPlates.has(plate) && !seenNewPlates.has(plate)) {
-        vehiclesToCreate.push({
-          plate: plate,
-          brand: row.brand ? String(row.brand).trim() : null,
-          model: row.model ? String(row.model).trim() : null,
-        });
+        vehiclesToCreate.push({ plate: plate, brand: row.brand ? String(row.brand).trim() : null, model: row.model ? String(row.model).trim() : null });
         seenNewPlates.add(plate);
       }
     }
@@ -242,9 +209,7 @@ export async function importMaintenanceData(rows: any[]) {
     }
 
     const plateToIdMap = new Map();
-    for (const v of existingVehicles as any[]) {
-      plateToIdMap.set(v.plate, v.id);
-    }
+    for (const v of existingVehicles as any[]) { plateToIdMap.set(v.plate, v.id); }
 
     const logsToCreate = [];
     for (const row of validRows) {
@@ -277,10 +242,8 @@ export async function importMaintenanceData(rows: any[]) {
     if (logsToCreate.length > 0) {
       await prisma.maintenanceLog.createMany({ data: logsToCreate });
     }
-
     return { success: true, message: `นำเข้าข้อมูลสำเร็จ` };
   } catch (error) {
-    console.error("Import Error:", error);
     return { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึกข้อมูล" };
   }
 }

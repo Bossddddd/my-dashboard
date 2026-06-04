@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import ImportButton from "../components/ImportButton"; // 🚀 นำเข้าคอมโพเนนต์ปุ่ม Import
+import ImportButton from "../components/ImportButton";
+import toast from "react-hot-toast";
 import { searchVehicleByPlate, getDashboardStats } from "./actions";
 
 interface MaintenanceLog {
@@ -36,19 +37,22 @@ interface VehicleRecord {
   maintenanceHistory: MaintenanceLog[];
 }
 
+// STATUS_CONFIG: ปรับเปลี่ยนจาก text-black เป็น text-gray-800 (เทาเข้มจนใกล้ดำแต่ยังเห็นเทา) เรียบร้อยครับ
 const STATUS_CONFIG: Record<string, { text: string, color: string }> = {
   reported: { text: "แจ้งแล้ว", color: "bg-blue-50 text-blue-600 border-blue-200" },
   assigned: { text: "มอบหมายแล้ว", color: "bg-indigo-50 text-indigo-600 border-indigo-200" },
   in_progress: { text: "กำลังซ่อม", color: "bg-amber-50 text-amber-600 border-amber-200" },
   blocked: { text: "ติดปัญหา (รออะไหล่)", color: "bg-rose-50 text-rose-600 border-rose-200" },
-  awaiting_qa: { text: "รอตรวจงาน", color: "bg-purple-50 text-purple-600 border-purple-200" },
+  awaiting_qa: { text: "รอตรวจงาน", color: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200" },
+  awaiting_q: { text: "รอตรวจงาน", color: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200" }, 
   completed: { text: "เสร็จสิ้น", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-  cancelled: { text: "ยกเลิก", color: "bg-gray-100 text-gray-500 border-gray-300" },
+  cancelled: { text: "ยกเลิก", color: "bg-gray-100 text-gray-800 border-gray-300" },
 };
 
+// สีความเร่งด่วน: ต่ำเป็นสีฟ้า และปกติเป็นสีเขียวสด
 const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
-  low: { text: "ต่ำ", color: "bg-slate-50 text-slate-600 border-slate-200" },
-  normal: { text: "ปกติ", color: "bg-blue-50 text-blue-600 border-blue-200" },
+  low: { text: "ต่ำ", color: "bg-blue-50 text-blue-600 border-blue-200" },
+  normal: { text: "ปกติ", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
   high: { text: "สูง", color: "bg-orange-50 text-orange-700 border-orange-200" },
   urgent: { text: "ด่วนที่สุด", color: "bg-rose-50 text-rose-700 border-rose-200" },
 };
@@ -56,7 +60,7 @@ const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
 const getStatusBadge = (status: string) => {
   const config = STATUS_CONFIG[status] || { text: status || "-", color: "bg-gray-100 border-gray-200" };
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${config.color}`}>
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${config.color}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80"></span>
       {config.text}
     </div>
@@ -99,10 +103,13 @@ export default function Home() {
       setVehicleData(undefined);
       return;
     }
+    const searchToast = toast.loading(`กำลังค้นหา ${searchInput}...`);
+    
     setVehicleData(undefined); 
     const foundData = await searchVehicleByPlate(searchInput.trim());
 
     if (foundData) {
+      toast.success(`พบประวัติรถ ${foundData.plate}`, { id: searchToast });
       setVehicleData({
         vehicleId: foundData.id,
         vehiclePlate: foundData.plate,
@@ -132,12 +139,13 @@ export default function Home() {
         }))
       });
     } else {
+      toast.error(`ไม่พบข้อมูล ${searchInput}`, { id: searchToast });
       setVehicleData(null);
     }
   };
 
   const renderContent = () => {
-    if (!stats) return <div className="text-center p-10 text-gray-500 font-medium">กำลังประมวลผลข้อมูล...</div>;
+    if (!stats) return <div className="text-center p-10 text-gray-500 font-medium flex items-center justify-center gap-2"><span className="animate-spin text-xl">⏳</span> กำลังโหลดข้อมูล...</div>;
 
     if (vehicleData !== undefined) {
       if (vehicleData === null) {
@@ -158,7 +166,7 @@ export default function Home() {
           </button>
           <h2 className="text-xl font-black text-[#0B603A]">ประวัติแจ้งซ่อมรถทะเบียน {vehicleData.vehiclePlate}</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white p-5 rounded-xl border border-gray-200 text-xs">
+            <div className="bg-white p-5 rounded-xl border border-gray-200 text-xs shadow-xs">
               <h3 className="font-bold text-sm text-gray-800 mb-4 pb-2 border-b">ข้อมูลทั่วไปยานพาหนะ</h3>
               <div className="space-y-3">
                 <div><span className="text-gray-400 block mb-0.5">หมายเลขทะเบียน</span><span className="font-bold text-gray-900 text-sm">{vehicleData.vehiclePlate}</span></div>
@@ -174,10 +182,10 @@ export default function Home() {
                   </div>
                   <p className="text-xs text-gray-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">{log.description}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100 text-[11px] text-gray-500">
-                    <div><span>ช่างรับผิดชอบ:</span> <span className="font-bold text-gray-800 block">{log.technicianName || "-"}</span></div>
-                    <div><span>อู่/ศูนย์ซ่อม:</span> <span className="font-medium text-gray-800 block">{log.workshopName || "-"}</span></div>
-                    <div><span>วันที่แจ้ง:</span> <span className="font-medium text-gray-800 block">{formatDateTime(log.reportedAt)}</span></div>
-                    <div><span>กำหนดเสร็จ:</span> <span className="font-bold text-rose-600 block">{formatDateTime(log.dueDate)}</span></div>
+                    <div><span>ช่างรับผิดชอบ:</span> <span className="font-bold text-gray-800 block mt-0.5">{log.technicianName || "-"}</span></div>
+                    <div><span>อู่/ศูนย์ซ่อม:</span> <span className="font-medium text-gray-800 block mt-0.5">{log.workshopName || "-"}</span></div>
+                    <div><span>วันที่แจ้ง:</span> <span className="font-medium text-gray-800 block mt-0.5">{formatDateTime(log.reportedAt)}</span></div>
+                    <div><span>กำหนดเสร็จ:</span> <span className="font-bold text-rose-600 block mt-0.5">{formatDateTime(log.dueDate)}</span></div>
                   </div>
                 </div>
               ))}
@@ -198,10 +206,7 @@ export default function Home() {
 
       return (
         <div className="flex flex-col gap-6">
-          
-          {/* 🚀 1. โซนแถบค้นหาและปุ่มนำเข้าข้อมูลแบบอัปเดตใหม่ */}
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs flex flex-col sm:flex-row justify-between items-center gap-4">
-            {/* กล่องค้นหาที่ลดขนาด (max-w-md) และเปลี่ยน placeholder เป็นสีเทาเข้ม (placeholder-gray-600) */}
             <div className="flex w-full sm:max-w-md relative">
               <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -221,14 +226,11 @@ export default function Home() {
                 ค้นหา
               </button>
             </div>
-            
-            {/* 🚀 เรียกปุ่ม ImportButton กลับมาไว้มุมขวา */}
             <div className="w-full sm:w-auto flex-shrink-0">
                <ImportButton />
             </div>
           </div>
 
-          {/* 2. การ์ดสรุปยอดภาพรวม */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-[#0B603A]">
               <div className="text-gray-400 text-xs font-bold mb-0.5">รถยนต์ในระบบทั้งหมด</div>
@@ -244,7 +246,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3. ดัชนีวิเคราะห์ประสิทธิภาพเชิงลึก */}
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
             <h3 className="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2">⚡ ประสิทธิภาพการดำเนินงานและความเร็วในการบริการ (KPI Metrics)</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
@@ -254,7 +255,7 @@ export default function Home() {
                   <span className="text-xl font-bold text-emerald-600 font-mono">{stats.efficiency.onTimeRate}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
-                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-500 h-1 rounded-full"></div>
+                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-50 h-1 rounded-full"></div>
                 </div>
               </div>
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
@@ -278,7 +279,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 4. กราฟแท่ง Pure Tailwind CSS ย้อนหลัง 6 เดือน */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
               <h3 className="text-xs font-bold text-gray-800 mb-6">📈 จำนวนใบแจ้งซ่อมแยกรายเดือน (6 เดือนล่าสุด)</h3>
@@ -312,7 +312,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 5. ตารางแสดงรายการงานที่ล่าช้าเกินกำหนด + ระบบแบ่งหน้า */}
           {totalOverdueItems > 0 && (
             <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
               <div className="p-4 border-b border-gray-100 bg-rose-50/40">
@@ -358,40 +357,27 @@ export default function Home() {
             </div>
           )}
 
-          {/* 6. กล่องสรุปสถิติตามกลุ่มสถานะและกลุ่มความเร่งด่วน */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
               <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
               <div className="flex flex-col gap-2">
-                {stats.statusCounts.map((item: any) => {
-                  const config = STATUS_CONFIG[item.status] || { text: item.status, color: "bg-gray-100" };
-                  return (
-                    <div key={item.status} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                      <div className="flex items-center gap-2.5">
-                        <span className={`w-2.5 h-2.5 rounded-full ${config.color.split(' ')[0]}`}></span>
-                        <span className="text-gray-700 font-medium">{config.text}</span>
-                      </div>
-                      <span className="font-bold text-gray-800">{item.count} รายการ</span>
-                    </div>
-                  );
-                })}
+                {stats.statusCounts.map((item: any) => (
+                  <div key={item.status} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                    {getStatusBadge(item.status)}
+                    <span className="font-bold text-gray-800">{item.count} <span className="text-xs font-normal text-gray-500 ml-1">รายการ</span></span>
+                  </div>
+                ))}
               </div>
             </div>
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
               <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">สรุปตามความเร่งด่วน (Priority)</h3>
               <div className="flex flex-col gap-2">
-                {stats.priorityCounts.map((item: any) => {
-                  const config = PRIORITY_CONFIG[item.priority] || { text: item.priority, color: "bg-gray-100" };
-                  return (
-                    <div key={item.priority} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                      <div className="flex items-center gap-3">
-                         <span className="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
-                         <span className="text-gray-700 font-medium">{config.text}</span>
-                      </div>
-                      <span className="font-bold text-gray-800">{item.count} รายการ</span>
-                    </div>
-                  );
-                })}
+                {stats.priorityCounts.map((item: any) => (
+                  <div key={item.priority} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                    {getPriorityBadge(item.priority)}
+                    <span className="font-bold text-gray-800">{item.count} <span className="text-xs font-normal text-gray-500 ml-1">รายการ</span></span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

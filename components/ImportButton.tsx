@@ -2,11 +2,12 @@
 
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
+import toast from "react-hot-toast";
 import { importMaintenanceData } from "../app/actions";
 
 export default function ImportButton() {
   const [isImporting, setIsImporting] = useState(false);
-  const [progress, setProgress] = useState(0); // 🚀 เพิ่ม State สำหรับเก็บเปอร์เซ็นต์โหลด
+  const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -15,6 +16,7 @@ export default function ImportButton() {
 
     setIsImporting(true);
     setProgress(0);
+    const toastId = toast.loading("กำลังเตรียมอ่านไฟล์...");
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -24,44 +26,46 @@ export default function ImportButton() {
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         
-        // ข้อมูลดิบทั้งหมด (เช่น 10,000 รายการ)
         const allData = XLSX.utils.sheet_to_json(sheet);
         
         if (allData.length === 0) {
-          alert("ไม่พบข้อมูลในไฟล์");
+          toast.error("ไม่พบข้อมูลในไฟล์", { id: toastId });
           setIsImporting(false);
           return;
         }
 
-        // 🚀 ระบบหั่นข้อมูล (Chunking) เพื่อหลบ Vercel Timeout
-        const CHUNK_SIZE = 500; // ส่งไปทีละ 500 รายการ
+        const CHUNK_SIZE = 500; 
         const totalChunks = Math.ceil(allData.length / CHUNK_SIZE);
         
         let successCount = 0;
+        let lastErrorMessage = "";
 
         for (let i = 0; i < totalChunks; i++) {
-          // ตัดก้อนข้อมูลทีละ 500
           const chunk = allData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+          const currentProgress = Math.round(((i + 1) / totalChunks) * 100);
           
-          // ส่งไปให้ actions.ts จัดการ
+          toast.loading(`กำลังนำเข้าข้อมูล... ${currentProgress}%`, { id: toastId });
+          setProgress(currentProgress);
+
           const result = await importMaintenanceData(chunk);
-          
           if (!result.success) {
+            lastErrorMessage = result.message;
             console.error("Chunk Error:", result.message);
           } else {
             successCount += chunk.length;
           }
-
-          // อัปเดต % หน้าจอให้รู้ว่าไม่ค้าง
-          setProgress(Math.round(((i + 1) / totalChunks) * 100));
         }
 
-        alert(`นำเข้าข้อมูลเรียบร้อยแล้ว (${successCount} จาก ${allData.length} รายการ)`);
-        window.location.reload(); 
+        if (successCount === 0 && lastErrorMessage) {
+          toast.error(`นำเข้าข้อมูลไม่สำเร็จ: ${lastErrorMessage}`, { id: toastId });
+        } else {
+          toast.success(`นำเข้าสำเร็จ (${successCount} รายการ)`, { id: toastId });
+          setTimeout(() => { window.location.reload(); }, 1500);
+        }
 
       } catch (error) {
         console.error("Error reading file:", error);
-        alert("เกิดข้อผิดพลาดในการอ่านไฟล์ โปรดตรวจสอบรูปแบบไฟล์อีกครั้ง");
+        toast.error("รูปแบบไฟล์ไม่ถูกต้อง", { id: toastId });
       } finally {
         setIsImporting(false);
         setProgress(0);
@@ -73,23 +77,15 @@ export default function ImportButton() {
 
   return (
     <div>
-      <input
-        type="file"
-        accept=".xlsx, .xls, .csv"
-        onChange={handleFileUpload}
-        ref={fileInputRef}
-        className="hidden"
-      />
+      <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} ref={fileInputRef} className="hidden" />
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={isImporting}
-        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-4 ${
-          isImporting 
-            ? "bg-gray-400 cursor-not-allowed" 
-            : "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-300"
+        className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition-colors shadow-xs ${
+          isImporting ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
-        {isImporting ? `⏳ กำลังนำเข้า... ${progress}%` : "📄 นำเข้า Excel / CSV"}
+        {isImporting ? `⏳ นำเข้า ${progress}%` : "นำเข้าข้อมูล"}
       </button>
     </div>
   );
