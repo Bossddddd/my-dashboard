@@ -114,23 +114,25 @@ export async function getDashboardStats() {
             name: rawWorkshop, totalJobs: 0, completedOnTime: 0, completedLate: 0, 
             inProgress: 0, overdueActive: 0, totalRepairTimeMs: 0, repairCount: 0,
             techsMap: new Map(),
-            logs: [] // 🚀 เพิ่มอาเรย์สำหรับเก็บลิสต์ใบงานซ่อมของอู่นี้
+            logs: [] 
           });
         }
         const wStats = workshopMap.get(rawWorkshop);
         wStats.totalJobs++;
 
-        // บันทึกใบงานซ่อมเข้าสู่อู่
-        wStats.logs.push({
+        const logDataForList = {
           maintenanceLogId: log.id,
           vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
           description: log.description,
           technicianName: log.technicianName || "ยังไม่ระบุ",
+          workshopName: log.workshopName || "ไม่ระบุ",
           status: log.status,
           priority: log.priority,
           reportedAt: log.reportedAt ? log.reportedAt.toISOString() : "",
           dueDate: log.dueDate ? log.dueDate.toISOString() : ""
-        });
+        };
+
+        wStats.logs.push(logDataForList);
 
         if (log.status === 'completed') {
           if (log.dueDate && log.completedAt) {
@@ -154,11 +156,13 @@ export async function getDashboardStats() {
         if (rawTech !== "") {
           if (!wStats.techsMap.has(rawTech)) {
             wStats.techsMap.set(rawTech, {
-              name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0
+              name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0,
+              logs: [] // 🚀 เพิ่ม Array เก็บใบงานรายคน
             });
           }
           const tStats = wStats.techsMap.get(rawTech);
           tStats.totalJobs++;
+          tStats.logs.push(logDataForList); // 🚀 โยนใบงานเข้าประวัติของช่าง
 
           if (log.status === 'completed') {
             if (log.dueDate && log.completedAt) {
@@ -191,14 +195,15 @@ export async function getDashboardStats() {
         name: w.name, totalJobs: w.totalJobs, successCount: w.completedOnTime, 
         lateCount: w.completedLate + w.overdueActive, inProgressCount: w.inProgress, 
         efficiencyRate: Math.round(efficiencyRate * 10) / 10, avgRepairHours: Math.round(avgRepairHoursW * 10) / 10,
-        logs: w.logs, // 🚀 ส่งข้อมูลลิสต์ใบงานซ่อมออกไปด้วย
+        logs: w.logs, 
         technicians: Array.from(w.techsMap.values()).map((t: any) => {
           const tClosed = t.completedOnTime + t.completedLate;
           const tEfficiency = tClosed > 0 ? (t.completedOnTime / tClosed) * 100 : 0;
           return {
             name: t.name, totalJobs: t.totalJobs, successCount: t.completedOnTime,
             inProgressCount: t.inProgress, lateCount: t.completedLate + t.overdueActive,
-            efficiencyRate: Math.round(tEfficiency * 10) / 10
+            efficiencyRate: Math.round(tEfficiency * 10) / 10,
+            logs: t.logs // 🚀 ส่งข้อมูลใบงานของช่างออกไปให้ Frontend
           };
         })
       };

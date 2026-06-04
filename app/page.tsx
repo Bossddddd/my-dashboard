@@ -10,6 +10,7 @@ interface MaintenanceLog {
   maintenanceLogId: number;
   vehiclePlate?: string;
   technicianName?: string;
+  workshopName?: string;
   priority: string; 
   status: string;   
   description: string;
@@ -46,7 +47,7 @@ const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
 const getStatusBadge = (status: string) => {
   const config = STATUS_CONFIG[status] || { text: status || "-", color: "bg-gray-100 border-gray-200" };
   return (
-    <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold border ${config.color} w-fit`}>
+    <div className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-xs font-bold border ${config.color} w-fit`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80 shrink-0"></span>
       <span className="whitespace-nowrap">{config.text}</span>
     </div>
@@ -55,13 +56,13 @@ const getStatusBadge = (status: string) => {
 
 const getPriorityBadge = (priority: string) => {
   const config = PRIORITY_CONFIG[priority] || { text: priority || "-", color: "bg-gray-50 border-gray-200" };
-  return <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold border ${config.color} whitespace-nowrap`}>{config.text}</span>;
+  return <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-xs font-bold border ${config.color} whitespace-nowrap`}>{config.text}</span>;
 };
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return <span className="text-gray-400 whitespace-nowrap">-</span>;
   return (
-    <span className="whitespace-nowrap text-xs sm:text-sm font-medium">
+    <span className="whitespace-nowrap text-[11px] sm:text-sm">
       {new Date(dateStr).toLocaleString('th-TH', {
         day: '2-digit', month: 'short', year: '2-digit'
       })}
@@ -171,6 +172,7 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const [selectedWorkshopDetail, setSelectedWorkshopDetail] = useState<any | null>(null);
+  const [selectedTechnicianDetail, setSelectedTechnicianDetail] = useState<any | null>(null); // 🚀 เพิ่ม State สำหรับช่าง
   const [selectedWorkshop, setSelectedWorkshop] = useState("all");
   
   const DASHBOARD_ITEMS_PER_PAGE = 50;  
@@ -179,6 +181,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTechPage, setCurrentTechPage] = useState(1);
   const [currentWorkshopLogPage, setCurrentWorkshopLogPage] = useState(1);
+  const [currentTechLogPage, setCurrentTechLogPage] = useState(1); // 🚀 State แบ่งหน้าใบงานของช่าง
 
   useEffect(() => {
     const loadStats = async () => {
@@ -190,6 +193,7 @@ export default function Home() {
 
   useEffect(() => {
     setSelectedWorkshopDetail(null);
+    setSelectedTechnicianDetail(null); // ล้างช่างเมื่อสลับแท็บ
   }, [activeTab]);
 
   const executeSearch = async () => {
@@ -225,7 +229,8 @@ export default function Home() {
       stats.workshopsData.forEach((w: any) => {
         w.technicians?.forEach((t: any) => {
           if (!allTechsMap.has(t.name)) {
-            allTechsMap.set(t.name, { ...t });
+            // โคลน log array เพื่อป้องกัน bug จาก reference
+            allTechsMap.set(t.name, { ...t, logs: t.logs ? [...t.logs] : [] });
           } else {
             const existing = allTechsMap.get(t.name);
             existing.totalJobs += t.totalJobs;
@@ -234,6 +239,8 @@ export default function Home() {
             existing.lateCount += t.lateCount;
             const tClosed = existing.successCount + existing.lateCount;
             existing.efficiencyRate = tClosed > 0 ? Math.round((existing.successCount / tClosed) * 1000) / 10 : 0;
+            // รวมใบงานทั้งหมดถ้าช่างคนเดียวกันทำหลายอู่
+            existing.logs = [...(existing.logs || []), ...(t.logs || [])];
           }
         });
       });
@@ -417,60 +424,60 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
-              <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-4 sm:gap-6">
+            <div className="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-sm w-full">
+              <h3 className="text-sm font-bold text-gray-800 mb-3 sm:mb-4 border-b border-gray-100 pb-2">📊 สรุปตามสถานะงานซ่อม (Status)</h3>
+              <div className="flex flex-wrap gap-3 sm:gap-4">
                 {stats.statusCounts.map((item: any) => (
-                  <div key={item.status} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={item.status} className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 flex-1 min-w-[120px] sm:min-w-[140px] gap-2 shadow-xs">
                     {getStatusBadge(item.status)}
-                    <span className="font-bold text-gray-800">{item.count} <span className="text-xs font-normal text-gray-500 ml-1">รายการ</span></span>
+                    <span className="font-black text-gray-800 text-xl sm:text-2xl mt-1 leading-none">{item.count} <span className="text-[10px] sm:text-xs font-medium text-gray-500">รายการ</span></span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2">สรุปตามความเร่งด่วน (Priority)</h3>
-              <div className="flex flex-col gap-2">
+
+            <div className="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-sm w-full">
+              <h3 className="text-sm font-bold text-gray-800 mb-3 sm:mb-4 border-b border-gray-100 pb-2">🚨 สรุปตามความเร่งด่วน (Priority)</h3>
+              <div className="flex flex-wrap gap-3 sm:gap-4">
                 {stats.priorityCounts.map((item: any) => (
-                  <div key={item.priority} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={item.priority} className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 flex-1 min-w-[120px] sm:min-w-[140px] gap-2 shadow-xs">
                     {getPriorityBadge(item.priority)}
-                    <span className="font-bold text-gray-800">{item.count} <span className="text-xs font-normal text-gray-500 ml-1">รายการ</span></span>
+                    <span className="font-black text-gray-800 text-xl sm:text-2xl mt-1 leading-none">{item.count} <span className="text-[10px] sm:text-xs font-medium text-gray-500">รายการ</span></span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* 🚀 ตารางรายการงานล่าช้าประจําแดชบอร์ดหลัก เปลี่ยนเป็น table-auto min-w ให้เลื่อนไม่ทับกัน */}
           {totalOverdueItems > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
               <div className="p-3 sm:p-4 border-b border-rose-100 bg-rose-50/50">
                 <h3 className="font-bold text-sm sm:text-base text-rose-700 flex items-center gap-2">🚨 รายการแจ้งซ่อมที่เกินกำหนด ({totalOverdueItems} รายการ)</h3>
               </div>
               <div className="w-full overflow-x-auto">
-                <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[900px]">
+                <table className="w-full text-left table-fixed text-[11px] sm:text-sm min-w-[650px] md:min-w-0">
                   <thead className="text-gray-600 bg-rose-50/20 text-[10px] sm:text-xs uppercase border-b border-rose-100">
                     <tr>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ลำดับ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ทะเบียนรถ</th>
-                      <th className="px-4 py-3 font-bold">รายละเอียด / อาการ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ช่าง</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">สถานะ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">กำหนดส่งเดิม</th>
+                      <th className="w-[8%] p-2 sm:px-4 sm:py-3 font-bold">ลำดับ</th>
+                      <th className="w-[17%] p-2 sm:px-4 sm:py-3 font-bold">ทะเบียนรถ</th>
+                      <th className="w-[25%] p-2 sm:px-4 sm:py-3 font-bold">รายละเอียด / อาการ</th>
+                      <th className="w-[17%] p-2 sm:px-4 sm:py-3 font-bold">ช่าง</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold">สถานะ</th>
+                      <th className="w-[18%] p-2 sm:px-4 sm:py-3 font-bold">กำหนดส่งเดิม</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {currentOverdueTasks.map((task: any, idx: number) => (
                       <tr key={task.id} className="hover:bg-rose-50/40 transition-colors">
-                        <td className="px-4 py-3 text-gray-400 align-top whitespace-nowrap">{startIndex + idx + 1}</td>
-                        <td className="px-4 py-3 font-black text-gray-900 align-top whitespace-nowrap">{task.plate || "-"}</td>
-                        <td className="px-4 py-3 text-gray-600 align-top break-words min-w-[250px]">
-                          {task.description}
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-400 align-top">{startIndex + idx + 1}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 break-words align-top">{task.plate || "-"}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-600 align-top">
+                          <div className="line-clamp-2 sm:line-clamp-3 break-words leading-tight whitespace-normal">{task.description}</div>
                         </td>
-                        <td className="px-4 py-3 text-blue-600 font-bold align-top whitespace-nowrap">{task.technicianName || "-"}</td>
-                        <td className="px-4 py-3 align-top whitespace-nowrap">{getStatusBadge(task.status)}</td>
-                        <td className="px-4 py-3 font-bold text-rose-600 align-top text-xs sm:text-sm whitespace-nowrap">{formatDateTime(task.dueDate)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-blue-600 font-bold break-words align-top">{task.technicianName || "-"}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 align-top">{getStatusBadge(task.status)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 font-bold text-rose-600 align-top text-[10px] sm:text-sm">{formatDateTime(task.dueDate)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -479,7 +486,6 @@ export default function Home() {
               {renderPagination(currentPage, totalPages, setCurrentPage, totalOverdueItems, startIndex, DASHBOARD_ITEMS_PER_PAGE)}
             </div>
           )}
-
         </div>
       );
     }
@@ -489,7 +495,6 @@ export default function Home() {
     // ==========================================
     if (activeTab === 'workshops') {
       
-      // 🚀 หน้าจอเจาะลึกรายละเอียดอู่เมื่อมีการกดเลือกแถว
       if (selectedWorkshopDetail) {
         const w = selectedWorkshopDetail;
         const totalWorkshopLogs = w.logs?.length || 0;
@@ -504,7 +509,6 @@ export default function Home() {
               กลับไปตารางอู่ทั้งหมด
             </button>
 
-            {/* 🚀 จัดหน้าเจาะลึกอู่: บล็อกรวมสถิติอยู่แนวนอนเต็มจอข้างบน */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-16 w-full">
               <div className="flex flex-col items-center shrink-0">
                 <h3 className="font-black text-gray-900 text-xl mb-6 text-center border-b pb-2 px-4 border-gray-100">🏢 {w.name}</h3>
@@ -538,34 +542,33 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 🚀 ตารางประวัติอู่ซ่อมเชิงลึก: อยู่ด้านล่าง ใช้ table-auto แก้อาการทับซ้อน */}
             <div className="w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="p-3 sm:p-5 bg-gray-50 border-b border-gray-100">
                 <h3 className="font-bold text-sm sm:text-base text-gray-800">📋 ประวัติการดำเนินการของอู่นี้ ({totalWorkshopLogs} รายการ)</h3>
               </div>
               <div className="w-full overflow-x-auto">
-                <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[900px]">
+                <table className="w-full text-left table-auto text-[11px] sm:text-sm min-w-[900px]">
                   <thead className="bg-gray-50 text-gray-600 text-[10px] sm:text-xs uppercase border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ทะเบียน</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ช่างผู้รับผิดชอบ</th>
-                      <th className="px-4 py-3 font-bold text-center whitespace-nowrap">ความเร่งด่วน</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">สถานะ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">กำหนดเสร็จ</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold">ทะเบียน</th>
+                      <th className="w-[20%] p-2 sm:px-4 sm:py-3 font-bold">รายละเอียด / อาการ</th>
+                      <th className="w-[20%] p-2 sm:px-4 sm:py-3 font-bold">ช่าง</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold text-center">เร่งด่วน</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold">สถานะ</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold">กำหนดเสร็จ</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
                     {currentLogs.map((log: any, idx: number) => (
                       <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
-                        <td className="px-4 py-3 font-black text-gray-900 align-top whitespace-nowrap">{log.vehiclePlate}</td>
-                        <td className="px-4 py-3 text-gray-600 align-top break-words min-w-[250px]">
-                          {log.description}
+                        <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 align-top whitespace-nowrap">{log.vehiclePlate}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-600 align-top">
+                          <div className="line-clamp-2 sm:line-clamp-3 break-words leading-tight whitespace-normal">{log.description}</div>
                         </td>
-                        <td className="px-4 py-3 text-gray-800 font-bold align-top whitespace-nowrap">{log.technicianName}</td>
-                        <td className="px-4 py-3 text-center align-top whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
-                        <td className="px-4 py-3 align-top whitespace-nowrap">{getStatusBadge(log.status)}</td>
-                        <td className="px-4 py-3 text-gray-500 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-800 font-bold align-top whitespace-nowrap">{log.technicianName}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap">{getStatusBadge(log.status)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-500 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -577,7 +580,6 @@ export default function Home() {
         );
       }
 
-      // หน้ารายการอู่ทั้งหมด
       return (
         <div className="flex flex-col gap-4 sm:gap-6">
           <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-12">
@@ -612,28 +614,28 @@ export default function Home() {
               <h3 className="font-bold text-sm sm:text-base text-gray-800">🏢 ตารางรายชื่ออู่/ศูนย์บริการซ่อมบำรุง</h3>
             </div>
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[900px]">
+              <table className="w-full text-left table-fixed text-[11px] sm:text-sm min-w-[650px] md:min-w-0">
                 <thead className="text-gray-600 bg-gray-100 border-b border-gray-200 text-[10px] sm:text-xs uppercase">
                   <tr>
-                    <th className="px-6 py-3 font-bold whitespace-nowrap">ชื่ออู่</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">สะสม</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">สำเร็จ</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">กำลังซ่อม</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">ล่าช้า</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap hidden sm:table-cell">เวลาเฉลี่ย</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">SLA</th>
+                    <th className="w-[28%] p-2 sm:px-4 sm:py-3 font-bold">ชื่ออู่</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center">สะสม</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center">สำเร็จ</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center">กำลังซ่อม</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center">ล่าช้า</th>
+                    <th className="w-[10%] p-2 sm:px-4 sm:py-3 font-bold text-center hidden sm:table-cell">เวลาเฉลี่ย</th>
+                    <th className="w-[14%] p-2 sm:px-4 sm:py-3 font-bold text-center">SLA</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {stats.workshopsData?.map((workshop: any, index: number) => (
                     <tr key={index} onClick={() => { setSelectedWorkshopDetail(workshop); setCurrentWorkshopLogPage(1); }} className="hover:bg-emerald-50/50 cursor-pointer transition-all">
-                      <td className="px-6 py-4 font-black text-[#0B603A] hover:text-emerald-700 flex items-center gap-1.5 whitespace-nowrap"><span className="text-sm sm:text-lg shrink-0">🏢</span> {workshop.name}</td>
-                      <td className="px-6 py-4 text-center font-bold text-gray-800 whitespace-nowrap">{workshop.totalJobs}</td>
-                      <td className="px-6 py-4 text-center text-emerald-600 font-black whitespace-nowrap">{workshop.successCount}</td>
-                      <td className="px-6 py-4 text-center text-amber-500 font-black whitespace-nowrap">{workshop.inProgressCount}</td>
-                      <td className="px-6 py-4 text-center text-rose-600 font-black whitespace-nowrap">{workshop.lateCount}</td>
-                      <td className="px-6 py-4 text-center font-mono font-bold text-gray-600 hidden sm:table-cell whitespace-nowrap">{workshop.avgRepairHours} ชม.</td>
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <td className="p-2 sm:px-4 sm:py-4 font-black text-[#0B603A] hover:text-emerald-700 flex items-center gap-1.5 break-words whitespace-normal"><span className="text-sm sm:text-lg shrink-0">🏢</span> {workshop.name}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center font-bold text-gray-800 break-words">{workshop.totalJobs}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center text-emerald-600 font-black">{workshop.successCount}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center text-amber-500 font-black">{workshop.inProgressCount}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center text-rose-600 font-black">{workshop.lateCount}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center font-mono font-bold text-gray-600 hidden sm:table-cell">{workshop.avgRepairHours} ชม.</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center">
                         <span className={`inline-block px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono font-black text-[9px] sm:text-sm shadow-xs ${
                           workshop.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700' : workshop.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
                         }`}>{workshop.efficiencyRate}%</span>
@@ -652,6 +654,93 @@ export default function Home() {
     // แท็บที่ 3: ทีมช่างและประสิทธิภาพ 
     // ==========================================
     if (activeTab === 'technicians') {
+
+      // 🚀 หน้าจอเจาะลึกช่างรายบุคคล
+      if (selectedTechnicianDetail) {
+        const t = selectedTechnicianDetail;
+        const totalTechLogs = t.logs?.length || 0;
+        const logTotalPages = Math.max(1, Math.ceil(totalTechLogs / GENERAL_ITEMS_PER_PAGE));
+        const logStartIndex = (currentTechLogPage - 1) * GENERAL_ITEMS_PER_PAGE;
+        const currentLogs = t.logs?.slice(logStartIndex, logStartIndex + GENERAL_ITEMS_PER_PAGE) || [];
+
+        return (
+          <div className="flex flex-col gap-6">
+            <button onClick={() => { setSelectedTechnicianDetail(null); setCurrentTechLogPage(1); }} className="text-sm font-bold text-gray-500 hover:text-[#0B603A] flex items-center gap-2 w-fit">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              กลับไปตารางช่างทั้งหมด
+            </button>
+
+            {/* 🚀 บล็อกบน: ภาพรวมช่าง (แนวนอนเต็มจอ) */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-16 w-full">
+              <div className="flex flex-col items-center shrink-0">
+                <h3 className="font-black text-gray-900 text-xl mb-6 text-center border-b pb-2 px-4 border-gray-100">👨‍🔧 {t.name}</h3>
+                <PurePieChart success={t.successCount} inProgress={t.inProgressCount} late={t.lateCount} size="lg" />
+              </div>
+              <div className="flex flex-col gap-4 text-sm font-bold bg-gray-50 p-6 rounded-xl border border-gray-100 w-full max-w-md">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> งานสำเร็จทั้งหมด:</span>
+                  <span className="font-black text-emerald-600 text-xl">{t.successCount} งาน</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500"></span> กำลังซ่อมบำรุง:</span>
+                  <span className="font-black text-amber-500 text-xl">{t.inProgressCount} งาน</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-rose-500"></span> งานล่าช้าสะสม:</span>
+                  <span className="font-black text-rose-600 text-xl">{t.lateCount} งาน</span>
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-gray-800 font-black text-base">ประสิทธิภาพ (SLA):</span>
+                  <span className={`px-4 py-1.5 rounded-lg font-mono font-black text-lg shadow-sm ${
+                    t.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    t.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>{t.efficiencyRate}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 🚀 ตารางล่าง: รายการประวัติใบงานของช่างรายนี้ */}
+            <div className="w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-3 sm:p-5 bg-gray-50 border-b border-gray-100">
+                <h3 className="font-bold text-sm sm:text-base text-gray-800">📋 ประวัติใบงานซ่อมบำรุง ({totalTechLogs} รายการ)</h3>
+              </div>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left table-auto text-[11px] sm:text-sm min-w-[900px]">
+                  <thead className="bg-gray-50 text-gray-600 text-[10px] sm:text-xs uppercase border-b border-gray-200">
+                    <tr>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">ทะเบียน</th>
+                      <th className="w-[20%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
+                      {/* 🚀 เปลี่ยนจาก "ช่าง" เป็น "อู่/ศูนย์ซ่อม" เพราะอยู่หน้าช่างแล้ว */}
+                      <th className="w-[20%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">อู่/ศูนย์ซ่อม</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">ความเร่งด่วน</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">สถานะ</th>
+                      <th className="w-[15%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">กำหนดเสร็จ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {currentLogs.map((log: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
+                        <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 align-top whitespace-nowrap">{log.vehiclePlate}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-600 align-top break-words min-w-[250px]">
+                          <div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div>
+                        </td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-800 font-bold align-top whitespace-nowrap">{log.workshopName}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap">{getStatusBadge(log.status)}</td>
+                        <td className="p-2 sm:px-4 sm:py-3 text-gray-500 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {renderPagination(currentTechLogPage, logTotalPages, setCurrentTechLogPage, totalTechLogs, logStartIndex, GENERAL_ITEMS_PER_PAGE)}
+            </div>
+          </div>
+        );
+      }
+
+      // หน้ารายชื่อช่างทั้งหมด
       const startIndex = (currentTechPage - 1) * GENERAL_ITEMS_PER_PAGE;
       const currentTechsList = techsData.list.slice(startIndex, startIndex + GENERAL_ITEMS_PER_PAGE);
       const totalTechPages = Math.max(1, Math.ceil(techsData.total / GENERAL_ITEMS_PER_PAGE));
@@ -712,28 +801,33 @@ export default function Home() {
               <h3 className="font-black text-sm sm:text-base text-gray-800">📋 ตารางผลงานช่างรายบุคคล <span className="text-[#0B603A] text-xs sm:text-base">({selectedWorkshop === "all" ? "ทุกอู่รวมกัน" : selectedWorkshop})</span></h3>
             </div>
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[850px]">
+              {/* 🚀 ตารางช่าง: ใส่ onClick ที่ row เข้าดูเจาะลึกช่างรายคน */}
+              <table className="w-full text-left table-auto text-[11px] sm:text-sm min-w-[850px]">
                 <thead className="text-gray-600 bg-gray-100 border-b border-gray-200 text-[10px] sm:text-xs uppercase">
                   <tr>
-                    <th className="px-6 py-3 font-bold whitespace-nowrap">ลำดับ</th>
-                    <th className="px-6 py-3 font-bold whitespace-nowrap">ชื่อช่าง</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">ทั้งหมด</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">สำเร็จ</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">กำลังซ่อม</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">ล่าช้า</th>
-                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">SLA</th>
+                    <th className="w-[10%] sm:w-[8%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">ลำดับ</th>
+                    <th className="w-[26%] sm:w-[25%] p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">ชื่อช่าง</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">ทั้งหมด</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">สำเร็จ</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">กำลังซ่อม</th>
+                    <th className="w-[12%] p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">ล่าช้า</th>
+                    <th className="w-[16%] p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">SLA</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {currentTechsList.map((tech: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-emerald-50/40 transition-colors">
-                      <td className="px-6 py-4 text-gray-400 font-bold whitespace-nowrap">{startIndex + idx + 1}</td>
-                      <td className="px-6 py-4 font-black text-gray-900 break-words whitespace-nowrap">{tech.name}</td>
-                      <td className="px-6 py-4 text-center font-bold text-gray-800 whitespace-nowrap">{tech.totalJobs}</td>
-                      <td className="px-6 py-4 text-center text-emerald-600 font-black whitespace-nowrap">{tech.successCount}</td>
-                      <td className="px-6 py-4 text-center text-amber-500 font-black whitespace-nowrap">{tech.inProgressCount}</td>
-                      <td className="px-6 py-4 text-center text-rose-600 font-black whitespace-nowrap">{tech.lateCount}</td>
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                    <tr 
+                      key={idx} 
+                      onClick={() => { setSelectedTechnicianDetail(tech); setCurrentTechLogPage(1); }} 
+                      className="hover:bg-emerald-50/50 cursor-pointer transition-colors"
+                    >
+                      <td className="p-2 sm:px-4 sm:py-4 text-gray-400 font-bold whitespace-nowrap">{startIndex + idx + 1}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 font-black text-[#0B603A] hover:text-emerald-700 flex items-center gap-1.5 break-words whitespace-normal"><span className="text-sm sm:text-lg shrink-0">👨‍🔧</span> {tech.name}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center font-bold text-gray-800 whitespace-nowrap">{tech.totalJobs}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center text-emerald-600 font-black whitespace-nowrap">{tech.successCount}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center text-amber-500 font-black whitespace-nowrap">{tech.inProgressCount}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center text-rose-600 font-black whitespace-nowrap">{tech.lateCount}</td>
+                      <td className="p-2 sm:px-4 sm:py-4 text-center whitespace-nowrap">
                         <span className={`inline-block px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono font-black text-[9px] sm:text-sm shadow-xs ${
                           tech.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700' : tech.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
                         }`}>{tech.efficiencyRate}%</span>
@@ -763,7 +857,7 @@ export default function Home() {
           </div>
           <div className="h-5 sm:h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
           <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
-            {vehicleData !== undefined ? "ประวัติรถ" : selectedWorkshopDetail ? `อู่: ${selectedWorkshopDetail.name}` : activeTab === 'dashboard' ? "Dashboard ซ่อมบำรุง" : activeTab === 'workshops' ? "อู่ซ่อม" : "ทีมช่าง"}
+            {vehicleData !== undefined ? "ประวัติรถ" : selectedWorkshopDetail ? `อู่: ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `ช่าง: ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? "Dashboard ซ่อมบำรุง" : activeTab === 'workshops' ? "อู่ซ่อม" : "ทีมช่าง"}
           </h1>
         </div>
       </header>
