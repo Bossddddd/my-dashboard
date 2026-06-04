@@ -46,7 +46,7 @@ const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
 const getStatusBadge = (status: string) => {
   const config = STATUS_CONFIG[status] || { text: status || "-", color: "bg-gray-100 border-gray-200" };
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${config.color} w-fit`}>
+    <div className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold border ${config.color} w-fit`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80 shrink-0"></span>
       <span className="whitespace-nowrap">{config.text}</span>
     </div>
@@ -55,26 +55,26 @@ const getStatusBadge = (status: string) => {
 
 const getPriorityBadge = (priority: string) => {
   const config = PRIORITY_CONFIG[priority] || { text: priority || "-", color: "bg-gray-50 border-gray-200" };
-  return <span className={`px-2 py-0.5 rounded text-xs font-bold border ${config.color} whitespace-nowrap`}>{config.text}</span>;
+  return <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold border ${config.color} whitespace-nowrap`}>{config.text}</span>;
 };
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return <span className="text-gray-400 whitespace-nowrap">-</span>;
   return (
-    <span className="whitespace-nowrap">
+    <span className="whitespace-nowrap text-xs sm:text-sm font-medium">
       {new Date(dateStr).toLocaleString('th-TH', {
-        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      })} น.
+        day: '2-digit', month: 'short', year: '2-digit'
+      })}
     </span>
   );
 };
 
 function PurePieChart({ success, inProgress, late, size = 'sm' }: { success: number, inProgress: number, late: number, size?: 'sm' | 'lg' }) {
   const total = success + inProgress + late;
-  const sizeClass = size === 'lg' ? 'w-56 h-56' : 'w-24 h-24';
-  const innerSizeClass = size === 'lg' ? 'w-36 h-36' : 'w-14 h-14';
-  const textClass = size === 'lg' ? 'text-4xl' : 'text-sm';
-  const subTextClass = size === 'lg' ? 'text-sm' : 'text-[9px]';
+  const sizeClass = size === 'lg' ? 'w-48 h-48 sm:w-56 sm:h-56' : 'w-24 h-24';
+  const innerSizeClass = size === 'lg' ? 'w-32 h-32 sm:w-36 h-36' : 'w-14 h-14';
+  const textClass = size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-sm';
+  const subTextClass = size === 'lg' ? 'text-xs sm:text-sm' : 'text-[9px]';
 
   if (total === 0) {
     return (
@@ -102,7 +102,6 @@ function PurePieChart({ success, inProgress, late, size = 'sm' }: { success: num
   );
 }
 
-// 🚀 สร้างคอมโพเนนต์สำหรับระบบแบ่งหน้า (Pagination) แบบมีตัวเลข
 const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void, totalItems: number, startIndex: number, itemsPerPage: number) => {
   if (totalPages <= 1) return null;
 
@@ -118,7 +117,7 @@ const renderPagination = (currentPage: number, totalPages: number, onPageChange:
       <button
         key={i}
         onClick={() => onPageChange(i)}
-        className={`w-9 h-9 flex items-center justify-center rounded-lg font-bold text-sm transition-all ${
+        className={`w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg font-bold text-xs sm:text-sm transition-all ${
           currentPage === i
             ? "bg-[#0B603A] text-white shadow-md"
             : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -130,22 +129,18 @@ const renderPagination = (currentPage: number, totalPages: number, onPageChange:
   }
 
   return (
-    <div className="p-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-600 bg-gray-50/80 font-medium">
+    <div className="p-3 sm:p-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-600 bg-gray-50/80 font-medium">
       <span className="whitespace-nowrap text-center sm:text-left">
         แสดงผล <span className="font-bold text-gray-800">{startIndex + 1}</span> ถึง <span className="font-bold text-gray-800">{Math.min(startIndex + itemsPerPage, totalItems)}</span> จากทั้งหมด <span className="font-bold text-gray-800">{totalItems}</span> รายการ
       </span>
-      <div className="flex items-center gap-1.5 flex-wrap justify-center">
-        <button
-          onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 font-bold shadow-xs transition-colors shrink-0"
-        >
+      <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center">
+        <button onClick={() => onPageChange(Math.max(currentPage - 1, 1))} disabled={currentPage === 1} className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 font-bold shadow-xs transition-colors shrink-0">
           ก่อนหน้า
         </button>
 
         {startPage > 1 && (
           <>
-            <button onClick={() => onPageChange(1)} className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 text-sm font-bold">1</button>
+            <button onClick={() => onPageChange(1)} className="w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs sm:text-sm font-bold">1</button>
             {startPage > 2 && <span className="text-gray-400">...</span>}
           </>
         )}
@@ -155,15 +150,11 @@ const renderPagination = (currentPage: number, totalPages: number, onPageChange:
         {endPage < totalPages && (
           <>
             {endPage < totalPages - 1 && <span className="text-gray-400">...</span>}
-            <button onClick={() => onPageChange(totalPages)} className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 text-sm font-bold">{totalPages}</button>
+            <button onClick={() => onPageChange(totalPages)} className="w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs sm:text-sm font-bold">{totalPages}</button>
           </>
         )}
 
-        <button
-          onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 font-bold shadow-xs transition-colors shrink-0"
-        >
+        <button onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))} disabled={currentPage === totalPages} className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 font-bold shadow-xs transition-colors shrink-0">
           ถัดไป
         </button>
       </div>
@@ -182,8 +173,8 @@ export default function Home() {
   const [selectedWorkshopDetail, setSelectedWorkshopDetail] = useState<any | null>(null);
   const [selectedWorkshop, setSelectedWorkshop] = useState("all");
   
-  // 🚀 ตั้งค่าการแสดงผลตารางเป็น 100 รายการต่อหน้า
-  const ITEMS_PER_PAGE = 100; 
+  const DASHBOARD_ITEMS_PER_PAGE = 50;  
+  const GENERAL_ITEMS_PER_PAGE = 100;   
 
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTechPage, setCurrentTechPage] = useState(1);
@@ -255,12 +246,7 @@ export default function Home() {
     const sortedByEff = [...allTechsArray].sort((a, b) => b.efficiencyRate - a.efficiencyRate || b.successCount - a.successCount);
     const sortedByWorst = [...allTechsArray].sort((a, b) => a.efficiencyRate - b.efficiencyRate || a.lateCount - b.lateCount);
 
-    return {
-      list: allTechsArray,
-      top: sortedByEff.slice(0, 3),
-      bottom: sortedByWorst.slice(0, 3),
-      total: allTechsArray.length
-    };
+    return { list: allTechsArray, top: sortedByEff.slice(0, 3), bottom: sortedByWorst.slice(0, 3), total: allTechsArray.length };
   }, [stats, selectedWorkshop]);
 
   const workshopSums = useMemo(() => {
@@ -287,18 +273,13 @@ export default function Home() {
             <div className="text-5xl mb-3">🔍</div>
             <h2 className="text-lg font-bold text-gray-800">ไม่พบข้อมูลยานพาหนะ</h2>
             <p className="text-gray-500 text-sm mt-1">ไม่พบเลขทะเบียน <span className="font-bold text-gray-800">"{searchInput}"</span> ในระบบ</p>
-            <button onClick={() => {setSearchInput(""); setVehicleData(undefined);}} className="mt-4 text-xs bg-gray-100 text-gray-600 font-bold px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
-              กลับหน้าหลัก
-            </button>
+            <button onClick={() => {setSearchInput(""); setVehicleData(undefined);}} className="mt-4 text-xs bg-gray-100 text-gray-600 font-bold px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">กลับหน้าหลัก</button>
           </div>
         );
       }
       return (
         <div className="flex flex-col gap-6">
-          <button onClick={() => {setSearchInput(""); setVehicleData(undefined);}} className="text-sm font-bold text-gray-500 hover:text-[#0B603A] flex items-center gap-1 transition-colors w-fit">
-            ← กลับหน้าแดชบอร์ดหลัก
-          </button>
-          
+          <button onClick={() => {setSearchInput(""); setVehicleData(undefined);}} className="text-sm font-bold text-gray-500 hover:text-[#0B603A] flex items-center gap-1 transition-colors w-fit">← กลับหน้าแดชบอร์ดหลัก</button>
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-3xl shrink-0">🚌</div>
             <div>
@@ -306,11 +287,8 @@ export default function Home() {
               <p className="text-sm text-gray-500 font-medium mt-1">ยี่ห้อ/รุ่น: {vehicleData.brand || "-"} {vehicleData.model || "-"} (รหัส ID-{vehicleData.vehicleId})</p>
             </div>
           </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-800">📋 ประวัติการแจ้งซ่อม</p>
-            </div>
+            <div className="p-4 bg-gray-50 border-b border-gray-100"><p className="text-sm font-bold text-gray-800">📋 ประวัติการแจ้งซ่อม</p></div>
             <div className="divide-y divide-gray-100">
               {vehicleData.maintenanceHistory?.map((log: any, idx: number) => (
                 <div key={idx} className="p-5 hover:bg-gray-50/50 transition-colors">
@@ -318,9 +296,7 @@ export default function Home() {
                     <span className="font-bold text-sm text-[#0B603A]">ใบงาน: #{log.id || "N/A"}</span>
                     {getStatusBadge(log.status)}
                   </div>
-                  <p className="text-sm text-gray-700 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed mb-3 break-words whitespace-normal">
-                    {log.description}
-                  </p>
+                  <p className="text-sm text-gray-700 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed mb-3 break-words whitespace-normal">{log.description}</p>
                   <div className="flex gap-6 text-xs text-gray-500 flex-wrap">
                     <div>ช่างซ่อม: <span className="font-bold text-gray-800">{log.technicianName || "-"}</span></div>
                     <div>วันที่แจ้ง: <span className="font-medium text-gray-800">{formatDateTime(log.reportedAt)}</span></div>
@@ -345,49 +321,33 @@ export default function Home() {
       const maxCost = Math.max(...stats.monthlyStats.map((m: any) => m.cost), 1);
       
       const totalOverdueItems = stats.overdueTasks?.length || 0;
-      const totalPages = Math.ceil(totalOverdueItems / ITEMS_PER_PAGE) || 1;
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-      const currentOverdueTasks = stats.overdueTasks?.slice(startIndex, startIndex + ITEMS_PER_PAGE) || [];
+      const totalPages = Math.ceil(totalOverdueItems / DASHBOARD_ITEMS_PER_PAGE) || 1; 
+      const startIndex = (currentPage - 1) * DASHBOARD_ITEMS_PER_PAGE;
+      const currentOverdueTasks = stats.overdueTasks?.slice(startIndex, startIndex + DASHBOARD_ITEMS_PER_PAGE) || [];
 
       return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex w-full sm:max-w-md relative">
-              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="ค้นหาทะเบียนรถ (ตัวอย่าง: 34-3276)" 
-                className="w-full pl-10 pr-24 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder-gray-600 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0B603A] transition-colors"
-                value={searchInput} 
-                onChange={(e) => setSearchInput(e.target.value)} 
-                onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
-              />
-              <button 
-                onClick={executeSearch} 
-                className="absolute right-1.5 top-1.5 bg-[#0B603A] hover:bg-[#08482b] text-white px-4 py-1 rounded-md text-xs font-bold transition-colors"
-              >
-                ค้นหา
-              </button>
+              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <input type="text" placeholder="ค้นหาทะเบียนรถ (ตัวอย่าง: 34-3276)" className="w-full pl-10 pr-24 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder-gray-600 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0B603A]" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && executeSearch()}/>
+              <button onClick={executeSearch} className="absolute right-1.5 top-1.5 bg-[#0B603A] hover:bg-[#08482b] text-white px-4 py-1 rounded-md text-xs font-bold transition-colors">ค้นหา</button>
             </div>
-            <div className="w-full sm:w-auto flex-shrink-0">
-               <ImportButton />
-            </div>
+            <div className="w-full sm:w-auto flex-shrink-0"><ImportButton /></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-t-4 border-t-[#0B603A]">
               <div className="text-gray-400 text-xs font-bold mb-1">รถยนต์ในระบบทั้งหมด</div>
-              <div className="text-3xl font-black text-[#0B603A]">{stats.totalVehicles} <span className="text-sm font-normal text-gray-400">คัน</span></div>
+              <div className="text-2xl sm:text-3xl font-black text-[#0B603A]">{stats.totalVehicles} <span className="text-xs sm:text-sm font-normal text-gray-400">คัน</span></div>
             </div>
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-t-4 border-t-amber-500">
               <div className="text-gray-400 text-xs font-bold mb-1">ใบแจ้งซ่อมทั้งหมด</div>
-              <div className="text-3xl font-black text-amber-600">{stats.totalLogs} <span className="text-sm font-normal text-gray-400">รายการ</span></div>
+              <div className="text-2xl sm:text-3xl font-black text-amber-600">{stats.totalLogs} <span className="text-xs sm:text-sm font-normal text-gray-400">รายการ</span></div>
             </div>
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-t-4 border-t-emerald-600">
               <div className="text-gray-400 text-xs font-bold mb-1">ยอดค่าซ่อมรวมสุทธิ</div>
-              <div className="text-3xl font-black text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-sm font-normal text-gray-400">บาท</span></div>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-xs sm:text-sm font-normal text-gray-400">บาท</span></div>
             </div>
           </div>
 
@@ -457,45 +417,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 🚀 ตารางงานล่าช้า ปลดล็อคความกว้าง และยอมให้ขึ้นบรรทัดใหม่ */}
-          {totalOverdueItems > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
-              <div className="p-4 border-b border-rose-100 bg-rose-50/50">
-                <h3 className="font-bold text-base text-rose-700 flex items-center gap-2">🚨 รายการแจ้งซ่อมที่เกินกำหนด ({totalOverdueItems} รายการ)</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[1000px]">
-                  <thead className="text-gray-600 bg-rose-50/20 text-xs uppercase border-b border-rose-100">
-                    <tr>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ลำดับ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ทะเบียนรถ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">ช่างที่รับผิดชอบ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">สถานะ</th>
-                      <th className="px-4 py-3 font-bold whitespace-nowrap">กำหนดส่งเดิม</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white text-sm">
-                    {currentOverdueTasks.map((task: any, idx: number) => (
-                      <tr key={task.id} className="hover:bg-rose-50/40 transition-colors">
-                        <td className="px-4 py-4 text-gray-400 whitespace-nowrap">{startIndex + idx + 1}</td>
-                        <td className="px-4 py-4 font-black text-gray-900 whitespace-nowrap">{task.plate || "-"}</td>
-                        {/* 🚀 บังคับตัดคำเฉพาะช่องรายละเอียด และเว้นที่ขั้นต่ำให้กว้างพอ */}
-                        <td className="px-4 py-4 text-gray-600 leading-relaxed whitespace-normal break-words min-w-[250px]">{task.description}</td>
-                        <td className="px-4 py-4 text-blue-600 font-bold whitespace-nowrap">{task.technicianName || "ยังไม่จ่ายงาน"}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">{getStatusBadge(task.status)}</td>
-                        <td className="px-4 py-4 font-bold text-rose-600 whitespace-nowrap">{formatDateTime(task.dueDate)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* 🚀 นำ Pagination Component มาใช้งาน */}
-              {renderPagination(currentPage, totalPages, setCurrentPage, totalOverdueItems, startIndex, ITEMS_PER_PAGE)}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
@@ -521,6 +442,44 @@ export default function Home() {
             </div>
           </div>
 
+          {/* 🚀 ตารางรายการงานล่าช้าประจําแดชบอร์ดหลัก เปลี่ยนเป็น table-auto min-w ให้เลื่อนไม่ทับกัน */}
+          {totalOverdueItems > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
+              <div className="p-3 sm:p-4 border-b border-rose-100 bg-rose-50/50">
+                <h3 className="font-bold text-sm sm:text-base text-rose-700 flex items-center gap-2">🚨 รายการแจ้งซ่อมที่เกินกำหนด ({totalOverdueItems} รายการ)</h3>
+              </div>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[900px]">
+                  <thead className="text-gray-600 bg-rose-50/20 text-[10px] sm:text-xs uppercase border-b border-rose-100">
+                    <tr>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">ลำดับ</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">ทะเบียนรถ</th>
+                      <th className="px-4 py-3 font-bold">รายละเอียด / อาการ</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">ช่าง</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">สถานะ</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">กำหนดส่งเดิม</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {currentOverdueTasks.map((task: any, idx: number) => (
+                      <tr key={task.id} className="hover:bg-rose-50/40 transition-colors">
+                        <td className="px-4 py-3 text-gray-400 align-top whitespace-nowrap">{startIndex + idx + 1}</td>
+                        <td className="px-4 py-3 font-black text-gray-900 align-top whitespace-nowrap">{task.plate || "-"}</td>
+                        <td className="px-4 py-3 text-gray-600 align-top break-words min-w-[250px]">
+                          {task.description}
+                        </td>
+                        <td className="px-4 py-3 text-blue-600 font-bold align-top whitespace-nowrap">{task.technicianName || "-"}</td>
+                        <td className="px-4 py-3 align-top whitespace-nowrap">{getStatusBadge(task.status)}</td>
+                        <td className="px-4 py-3 font-bold text-rose-600 align-top text-xs sm:text-sm whitespace-nowrap">{formatDateTime(task.dueDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {renderPagination(currentPage, totalPages, setCurrentPage, totalOverdueItems, startIndex, DASHBOARD_ITEMS_PER_PAGE)}
+            </div>
+          )}
+
         </div>
       );
     }
@@ -530,135 +489,106 @@ export default function Home() {
     // ==========================================
     if (activeTab === 'workshops') {
       
-      // หน้าจอเจาะลึกรายละเอียดอู่
+      // 🚀 หน้าจอเจาะลึกรายละเอียดอู่เมื่อมีการกดเลือกแถว
       if (selectedWorkshopDetail) {
         const w = selectedWorkshopDetail;
         const totalWorkshopLogs = w.logs?.length || 0;
-        const logTotalPages = Math.max(1, Math.ceil(totalWorkshopLogs / ITEMS_PER_PAGE));
-        const logStartIndex = (currentWorkshopLogPage - 1) * ITEMS_PER_PAGE;
-        const currentLogs = w.logs?.slice(logStartIndex, logStartIndex + ITEMS_PER_PAGE) || [];
+        const logTotalPages = Math.max(1, Math.ceil(totalWorkshopLogs / GENERAL_ITEMS_PER_PAGE));
+        const logStartIndex = (currentWorkshopLogPage - 1) * GENERAL_ITEMS_PER_PAGE;
+        const currentLogs = w.logs?.slice(logStartIndex, logStartIndex + GENERAL_ITEMS_PER_PAGE) || [];
 
         return (
           <div className="flex flex-col gap-6">
-            <button 
-              onClick={() => { setSelectedWorkshopDetail(null); setCurrentWorkshopLogPage(1); }} 
-              className="text-sm font-bold text-gray-500 hover:text-[#0B603A] flex items-center gap-2 transition-colors w-fit"
-            >
+            <button onClick={() => { setSelectedWorkshopDetail(null); setCurrentWorkshopLogPage(1); }} className="text-sm font-bold text-gray-500 hover:text-[#0B603A] flex items-center gap-2 w-fit">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
               กลับไปตารางอู่ทั้งหมด
             </button>
 
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
-              
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full lg:w-96 flex flex-col items-center shrink-0">
-                <h3 className="font-black text-gray-900 text-lg mb-6 text-center w-full border-b pb-3 border-gray-100">
-                  🏢 {w.name}
-                </h3>
-                
-                <div className="my-4">
-                  <PurePieChart success={w.successCount} inProgress={w.inProgressCount} late={w.lateCount} size="lg" />
+            {/* 🚀 จัดหน้าเจาะลึกอู่: บล็อกรวมสถิติอยู่แนวนอนเต็มจอข้างบน */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-16 w-full">
+              <div className="flex flex-col items-center shrink-0">
+                <h3 className="font-black text-gray-900 text-xl mb-6 text-center border-b pb-2 px-4 border-gray-100">🏢 {w.name}</h3>
+                <PurePieChart success={w.successCount} inProgress={w.inProgressCount} late={w.lateCount} size="lg" />
+              </div>
+              <div className="flex flex-col gap-4 text-sm font-bold bg-gray-50 p-6 rounded-xl border border-gray-100 w-full max-w-md">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> งานสำเร็จทั้งหมด:</span>
+                  <span className="font-black text-emerald-600 text-xl">{w.successCount} งาน</span>
                 </div>
-
-                <div className="w-full space-y-4 mt-8 text-sm">
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> งานสำเร็จทั้งหมด:</span>
-                    <span className="font-black text-emerald-600 text-base">{w.successCount} งาน</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> กำลังซ่อมบำรุง:</span>
-                    <span className="font-black text-amber-500 text-base">{w.inProgressCount} งาน</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> งานล่าช้าสะสม:</span>
-                    <span className="font-black text-rose-600 text-base">{w.lateCount} งาน</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
-                    <span className="text-gray-500 font-bold">เวลาซ่อมเฉลี่ย (ต่อคัน):</span>
-                    <span className="font-mono font-bold text-gray-700">{w.avgRepairHours} ชม.</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-gray-800 font-black">ประสิทธิภาพ (SLA):</span>
-                    <span className={`px-3 py-1 rounded-lg font-mono font-black text-base shadow-sm ${
-                      w.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      w.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                      'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}>
-                      {w.efficiencyRate}%
-                    </span>
-                  </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500"></span> กำลังซ่อมบำรุง:</span>
+                  <span className="font-black text-amber-500 text-xl">{w.inProgressCount} งาน</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-rose-500"></span> งานล่าช้าสะสม:</span>
+                  <span className="font-black text-rose-600 text-xl">{w.lateCount} งาน</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-500 font-bold">เวลาซ่อมเฉลี่ย (ต่อคัน):</span>
+                  <span className="font-mono font-black text-gray-700 text-lg">{w.avgRepairHours} ชม.</span>
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-gray-800 font-black text-base">ประสิทธิภาพ (SLA):</span>
+                  <span className={`px-4 py-1.5 rounded-lg font-mono font-black text-lg shadow-sm ${
+                    w.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    w.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>{w.efficiencyRate}%</span>
                 </div>
               </div>
+            </div>
 
-              {/* ฝั่งขวา: ลิสต์รายการซ่อม 🚀 ปลดล็อคความกว้างเพื่อให้เนื้อหาไม่ซ้อน */}
-              <div className="flex-1 w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="p-5 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                  <h3 className="font-bold text-base text-gray-800">
-                    📋 ประวัติการดำเนินการของอู่นี้ ({totalWorkshopLogs} รายการ)
-                  </h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left relative min-w-[1000px]">
-                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase border-b border-gray-200">
-                      <tr>
-                        <th className="px-5 py-4 font-bold whitespace-nowrap">ทะเบียนรถ</th>
-                        <th className="px-5 py-4 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
-                        <th className="px-5 py-4 font-bold whitespace-nowrap">ช่างผู้รับผิดชอบ</th>
-                        <th className="px-5 py-4 font-bold text-center whitespace-nowrap">ความเร่งด่วน</th>
-                        <th className="px-5 py-4 font-bold whitespace-nowrap">สถานะ</th>
-                        <th className="px-5 py-4 font-bold whitespace-nowrap">กำหนดเสร็จ</th>
+            {/* 🚀 ตารางประวัติอู่ซ่อมเชิงลึก: อยู่ด้านล่าง ใช้ table-auto แก้อาการทับซ้อน */}
+            <div className="w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-3 sm:p-5 bg-gray-50 border-b border-gray-100">
+                <h3 className="font-bold text-sm sm:text-base text-gray-800">📋 ประวัติการดำเนินการของอู่นี้ ({totalWorkshopLogs} รายการ)</h3>
+              </div>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[900px]">
+                  <thead className="bg-gray-50 text-gray-600 text-[10px] sm:text-xs uppercase border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">ทะเบียน</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">ช่างผู้รับผิดชอบ</th>
+                      <th className="px-4 py-3 font-bold text-center whitespace-nowrap">ความเร่งด่วน</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">สถานะ</th>
+                      <th className="px-4 py-3 font-bold whitespace-nowrap">กำหนดเสร็จ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {currentLogs.map((log: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
+                        <td className="px-4 py-3 font-black text-gray-900 align-top whitespace-nowrap">{log.vehiclePlate}</td>
+                        <td className="px-4 py-3 text-gray-600 align-top break-words min-w-[250px]">
+                          {log.description}
+                        </td>
+                        <td className="px-4 py-3 text-gray-800 font-bold align-top whitespace-nowrap">{log.technicianName}</td>
+                        <td className="px-4 py-3 text-center align-top whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
+                        <td className="px-4 py-3 align-top whitespace-nowrap">{getStatusBadge(log.status)}</td>
+                        <td className="px-4 py-3 text-gray-500 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
-                      {currentLogs.map((log: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
-                          <td className="px-5 py-4 font-black text-gray-900 whitespace-nowrap">{log.vehiclePlate}</td>
-                          {/* 🚀 จำกัดความกว้างขั้นต่ำของรายละเอียด เพื่อให้ตัดบรรทัดได้เหมาะสมและไม่ทับส่วนอื่น */}
-                          <td className="px-5 py-4 text-gray-600 leading-relaxed whitespace-normal break-words min-w-[300px]">{log.description}</td>
-                          <td className="px-5 py-4 text-gray-800 font-bold whitespace-nowrap">{log.technicianName}</td>
-                          <td className="px-5 py-4 text-center whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
-                          <td className="px-5 py-4 whitespace-nowrap">{getStatusBadge(log.status)}</td>
-                          <td className="px-5 py-4 text-gray-500 font-bold whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
-                        </tr>
-                      ))}
-                      {currentLogs.length === 0 && (
-                        <tr><td colSpan={6} className="text-center py-12 text-gray-400 font-medium">ไม่พบข้อมูลประวัติใบงานซ่อมในอู่นี้</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* 🚀 นำ Pagination Component มาใช้งาน */}
-                {renderPagination(currentWorkshopLogPage, logTotalPages, setCurrentWorkshopLogPage, totalWorkshopLogs, logStartIndex, ITEMS_PER_PAGE)}
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              {renderPagination(currentWorkshopLogPage, logTotalPages, setCurrentWorkshopLogPage, totalWorkshopLogs, logStartIndex, GENERAL_ITEMS_PER_PAGE)}
             </div>
           </div>
         );
       }
 
-      // หน้าหลักแท็บอู่ (แสดงรายชื่อตารางอู่ทั้งหมด)
+      // หน้ารายการอู่ทั้งหมด
       return (
-        <div className="flex flex-col gap-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-center gap-12">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-12">
             <div className="flex flex-col items-center">
-              <h3 className="text-base font-black text-gray-800 mb-6 text-center tracking-wide">
-                📊 สัดส่วนสถานะงานซ่อมรวมทุกอู่ (ภาพรวมทั้งระบบ)
-              </h3>
+              <h3 className="text-sm sm:text-base font-black text-gray-800 mb-4 sm:mb-6 text-center">📊 สัดส่วนสถานะงานซ่อมรวมทุกอู่</h3>
               <PurePieChart success={workshopSums.sumSuccess} inProgress={workshopSums.sumInProgress} late={workshopSums.sumLate} size="lg" />
             </div>
-            
-            <div className="flex flex-col gap-4 text-sm font-bold bg-gray-50 p-6 rounded-xl border border-gray-100 min-w-[250px]">
-              <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                <span className="flex items-center gap-3 text-gray-600"><span className="w-4 h-4 rounded-full bg-emerald-500 shadow-sm"></span> งานสำเร็จทั้งหมด</span>
-                <span className="text-emerald-600 text-lg font-black">{workshopSums.sumSuccess}</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                <span className="flex items-center gap-3 text-gray-600"><span className="w-4 h-4 rounded-full bg-amber-500 shadow-sm"></span> กำลังซ่อมบำรุง</span>
-                <span className="text-amber-500 text-lg font-black">{workshopSums.sumInProgress}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-3 text-gray-600"><span className="w-4 h-4 rounded-full bg-rose-500 shadow-sm"></span> ล่าช้า / เกินกำหนด</span>
-                <span className="text-rose-600 text-lg font-black">{workshopSums.sumLate}</span>
-              </div>
+            <div className="flex flex-col gap-3 sm:gap-4 text-xs sm:text-sm font-bold bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-100 w-full md:w-auto min-w-[250px] lg:min-w-[350px]">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-200"><span className="flex items-center gap-2 text-gray-600"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> งานสำเร็จ</span><span className="text-emerald-600 text-xl font-black">{workshopSums.sumSuccess}</span></div>
+              <div className="flex justify-between items-center pb-2 border-b border-gray-200"><span className="flex items-center gap-2 text-gray-600"><span className="w-3 h-3 rounded-full bg-amber-500"></span> กำลังซ่อม</span><span className="text-amber-500 text-xl font-black">{workshopSums.sumInProgress}</span></div>
+              <div className="flex justify-between items-center"><span className="flex items-center gap-2 text-gray-600"><span className="w-3 h-3 rounded-full bg-rose-500"></span> ล่าช้า</span><span className="text-rose-600 text-xl font-black">{workshopSums.sumLate}</span></div>
             </div>
           </div>
 
@@ -678,52 +608,38 @@ export default function Home() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-2">
-            <div className="p-5 border-b border-gray-100 bg-gray-50">
-              <h3 className="font-bold text-base text-gray-800">🏢 ตารางรายชื่ออู่/ศูนย์บริการซ่อมบำรุง <span className="text-sm text-gray-400 font-medium ml-2">(คลิกที่แถวอู่เพื่อเข้าดูข้อมูลเชิงลึก)</span></h3>
+            <div className="p-3 sm:p-5 border-b border-gray-100 bg-gray-50">
+              <h3 className="font-bold text-sm sm:text-base text-gray-800">🏢 ตารางรายชื่ออู่/ศูนย์บริการซ่อมบำรุง</h3>
             </div>
-            <div className="overflow-x-auto">
-              {/* 🚀 ปรับตารางอู่ให้เลื่อนอิสระหากหน้าจอแคบเกินไป */}
-              <table className="w-full text-sm text-left min-w-[900px]">
-                <thead className="text-gray-600 bg-gray-100 border-b border-gray-200 text-xs uppercase">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[900px]">
+                <thead className="text-gray-600 bg-gray-100 border-b border-gray-200 text-[10px] sm:text-xs uppercase">
                   <tr>
-                    <th className="px-6 py-4 font-bold whitespace-nowrap">ชื่ออู่ / ศูนย์บริการ</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">งานซ่อมสะสม</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">สำเร็จ (ในเวลา)</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">กำลังดำเนินการ</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">ล่าช้า / เกินกำหนด</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">เวลาซ่อมเฉลี่ย</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">อัตราสำเร็จ (SLA)</th>
+                    <th className="px-6 py-3 font-bold whitespace-nowrap">ชื่ออู่</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">สะสม</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">สำเร็จ</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">กำลังซ่อม</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">ล่าช้า</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap hidden sm:table-cell">เวลาเฉลี่ย</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">SLA</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 bg-white text-sm">
+                <tbody className="divide-y divide-gray-100 bg-white">
                   {stats.workshopsData?.map((workshop: any, index: number) => (
-                    <tr 
-                      key={index} 
-                      onClick={() => { setSelectedWorkshopDetail(workshop); setCurrentWorkshopLogPage(1); }}
-                      className="hover:bg-emerald-50/50 cursor-pointer transition-all"
-                    >
-                      <td className="px-6 py-5 font-black text-[#0B603A] hover:text-emerald-700 flex items-center gap-2 whitespace-nowrap">
-                        <span className="text-lg shrink-0">🏢</span> {workshop.name}
-                      </td>
-                      <td className="px-6 py-5 text-center font-bold text-gray-800 whitespace-nowrap">{workshop.totalJobs}</td>
-                      <td className="px-6 py-5 text-center text-emerald-600 font-black whitespace-nowrap">{workshop.successCount}</td>
-                      <td className="px-6 py-5 text-center text-amber-500 font-black whitespace-nowrap">{workshop.inProgressCount}</td>
-                      <td className="px-6 py-5 text-center text-rose-600 font-black whitespace-nowrap">{workshop.lateCount}</td>
-                      <td className="px-6 py-5 text-center font-mono font-bold text-gray-600 whitespace-nowrap">{workshop.avgRepairHours} <span className="text-xs">ชม.</span></td>
-                      <td className="px-6 py-5 text-center whitespace-nowrap">
-                        <span className={`inline-block px-3 py-1.5 rounded-lg font-mono font-black text-sm shadow-xs ${
-                          workshop.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          workshop.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}>
-                          {workshop.efficiencyRate}%
-                        </span>
+                    <tr key={index} onClick={() => { setSelectedWorkshopDetail(workshop); setCurrentWorkshopLogPage(1); }} className="hover:bg-emerald-50/50 cursor-pointer transition-all">
+                      <td className="px-6 py-4 font-black text-[#0B603A] hover:text-emerald-700 flex items-center gap-1.5 whitespace-nowrap"><span className="text-sm sm:text-lg shrink-0">🏢</span> {workshop.name}</td>
+                      <td className="px-6 py-4 text-center font-bold text-gray-800 whitespace-nowrap">{workshop.totalJobs}</td>
+                      <td className="px-6 py-4 text-center text-emerald-600 font-black whitespace-nowrap">{workshop.successCount}</td>
+                      <td className="px-6 py-4 text-center text-amber-500 font-black whitespace-nowrap">{workshop.inProgressCount}</td>
+                      <td className="px-6 py-4 text-center text-rose-600 font-black whitespace-nowrap">{workshop.lateCount}</td>
+                      <td className="px-6 py-4 text-center font-mono font-bold text-gray-600 hidden sm:table-cell whitespace-nowrap">{workshop.avgRepairHours} ชม.</td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <span className={`inline-block px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono font-black text-[9px] sm:text-sm shadow-xs ${
+                          workshop.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700' : workshop.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
+                        }`}>{workshop.efficiencyRate}%</span>
                       </td>
                     </tr>
                   ))}
-                  {(!stats.workshopsData || stats.workshopsData.length === 0) && (
-                    <tr><td colSpan={7} className="text-center py-10 text-gray-400 font-bold text-base">ไม่มีข้อมูลอู่ซ่อมบำรุง</td></tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -736,33 +652,25 @@ export default function Home() {
     // แท็บที่ 3: ทีมช่างและประสิทธิภาพ 
     // ==========================================
     if (activeTab === 'technicians') {
-      const startIndex = (currentTechPage - 1) * ITEMS_PER_PAGE;
-      const currentTechsList = techsData.list.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-      const totalTechPages = Math.max(1, Math.ceil(techsData.total / ITEMS_PER_PAGE));
+      const startIndex = (currentTechPage - 1) * GENERAL_ITEMS_PER_PAGE;
+      const currentTechsList = techsData.list.slice(startIndex, startIndex + GENERAL_ITEMS_PER_PAGE);
+      const totalTechPages = Math.max(1, Math.ceil(techsData.total / GENERAL_ITEMS_PER_PAGE));
 
       return (
-        <div className="flex flex-col gap-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col gap-2 w-full sm:w-80 shrink-0">
-              <label className="text-sm font-bold text-gray-500">กรุณาเลือกอู่/ศูนย์ซ่อมเพื่อตรวจสอบรายชื่อช่าง:</label>
-              <select 
-                value={selectedWorkshop} 
-                onChange={(e) => { setSelectedWorkshop(e.target.value); setCurrentTechPage(1); }} 
-                className="w-full bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 text-base font-bold text-[#0B603A] focus:outline-none focus:ring-2 focus:ring-[#0B603A] cursor-pointer shadow-xs"
-              >
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col gap-1 sm:gap-2 w-full sm:w-80 shrink-0">
+              <label className="text-xs sm:text-sm font-bold text-gray-500">กรุณาเลือกอู่/ศูนย์ซ่อมเพื่อตรวจสอบรายชื่อช่าง:</label>
+              <select value={selectedWorkshop} onChange={(e) => { setSelectedWorkshop(e.target.value); setCurrentTechPage(1); }} className="w-full bg-gray-50 border border-gray-300 rounded-lg py-2.5 px-3 text-sm sm:text-base font-bold text-[#0B603A]">
                 <option value="all">🌐 แสดงช่างทั้งหมดทุกอู่รวมกัน</option>
                 {stats.workshopsData?.map((w: any, i: number) => <option key={i} value={w.name}>{w.name}</option>)}
               </select>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl py-4 px-8 text-center w-full sm:w-auto flex items-center justify-center gap-4 shadow-xs">
-              <span className="text-4xl drop-shadow-sm shrink-0">👨‍💻</span>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl py-3 px-6 text-center w-full sm:w-auto flex items-center justify-center gap-4">
+              <span className="text-3xl sm:text-4xl shrink-0">👨‍💻</span>
               <div className="text-left">
-                <span className="text-sm text-gray-600 font-bold block mb-1">
-                  {selectedWorkshop === "all" ? "จำนวนช่างทั้งหมดในระบบ" : "จำนวนช่างประจำอู่นี้"}
-                </span>
-                <span className="text-3xl font-black text-[#0B603A] font-mono leading-none">
-                  {techsData.total} <span className="text-sm font-bold text-gray-500">คน</span>
-                </span>
+                <span className="text-[11px] sm:text-sm text-gray-600 font-bold block mb-0.5">{selectedWorkshop === "all" ? "ช่างทั้งหมด" : "ช่างประจำอู่นี้"}</span>
+                <span className="text-2xl sm:text-3xl font-black text-[#0B603A] font-mono leading-none">{techsData.total} <span className="text-xs sm:text-sm font-bold text-gray-500">คน</span></span>
               </div>
             </div>
           </div>
@@ -780,7 +688,6 @@ export default function Home() {
                     <span className="font-mono bg-emerald-600 text-white px-3 py-1 rounded-lg font-black text-base shadow-sm shrink-0">{t.efficiencyRate}%</span>
                   </div>
                 ))}
-                {techsData.top.length === 0 && <p className="text-center text-emerald-600/50 font-bold py-6">ไม่มีข้อมูล</p>}
               </div>
             </div>
 
@@ -796,62 +703,47 @@ export default function Home() {
                     <span className="font-mono bg-rose-500 text-white px-3 py-1 rounded-lg font-black text-base shadow-sm shrink-0">{t.efficiencyRate}%</span>
                   </div>
                 ))}
-                {techsData.bottom.length === 0 && <p className="text-center text-rose-600/50 font-bold py-6">ไม่มีข้อมูล</p>}
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-              <h3 className="font-black text-base text-gray-800">
-                📋 ตารางผลงานช่างรายบุคคล <span className="text-[#0B603A]">(อ้างอิงจาก: {selectedWorkshop === "all" ? "ทุกอู่รวมกัน" : selectedWorkshop || "-"})</span>
-              </h3>
+            <div className="p-3 sm:p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+              <h3 className="font-black text-sm sm:text-base text-gray-800">📋 ตารางผลงานช่างรายบุคคล <span className="text-[#0B603A] text-xs sm:text-base">({selectedWorkshop === "all" ? "ทุกอู่รวมกัน" : selectedWorkshop})</span></h3>
             </div>
-            <div className="overflow-x-auto">
-              {/* 🚀 ปรับเป็นตารางที่มีความกว้างขั้นต่ำ ป้องกันการทับซ้อน */}
-              <table className="w-full text-sm text-left min-w-[900px]">
-                <thead className="text-gray-600 bg-gray-100 border-b border-gray-200 text-xs uppercase">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left table-auto text-xs sm:text-sm min-w-[850px]">
+                <thead className="text-gray-600 bg-gray-100 border-b border-gray-200 text-[10px] sm:text-xs uppercase">
                   <tr>
-                    <th className="px-6 py-4 font-bold whitespace-nowrap">ลำดับ</th>
-                    <th className="px-6 py-4 font-bold whitespace-nowrap">ชื่อ-นามสกุลช่าง</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">งานทั้งหมด</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">ซ่อมสำเร็จ</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">กำลังซ่อมอยู่</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">ล่าช้าสะสม</th>
-                    <th className="px-6 py-4 font-bold text-center whitespace-nowrap">ประสิทธิภาพรวม (SLA)</th>
+                    <th className="px-6 py-3 font-bold whitespace-nowrap">ลำดับ</th>
+                    <th className="px-6 py-3 font-bold whitespace-nowrap">ชื่อช่าง</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">ทั้งหมด</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">สำเร็จ</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">กำลังซ่อม</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">ล่าช้า</th>
+                    <th className="px-6 py-3 font-bold text-center whitespace-nowrap">SLA</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 bg-white text-sm">
+                <tbody className="divide-y divide-gray-100 bg-white">
                   {currentTechsList.map((tech: any, idx: number) => (
                     <tr key={idx} className="hover:bg-emerald-50/40 transition-colors">
                       <td className="px-6 py-4 text-gray-400 font-bold whitespace-nowrap">{startIndex + idx + 1}</td>
-                      <td className="px-6 py-4 font-black text-gray-900 text-base whitespace-nowrap">{tech.name}</td>
+                      <td className="px-6 py-4 font-black text-gray-900 break-words whitespace-nowrap">{tech.name}</td>
                       <td className="px-6 py-4 text-center font-bold text-gray-800 whitespace-nowrap">{tech.totalJobs}</td>
                       <td className="px-6 py-4 text-center text-emerald-600 font-black whitespace-nowrap">{tech.successCount}</td>
                       <td className="px-6 py-4 text-center text-amber-500 font-black whitespace-nowrap">{tech.inProgressCount}</td>
                       <td className="px-6 py-4 text-center text-rose-600 font-black whitespace-nowrap">{tech.lateCount}</td>
                       <td className="px-6 py-4 text-center whitespace-nowrap">
-                        <span className={`inline-block px-3 py-1.5 rounded-lg font-mono font-black shadow-xs ${
-                          tech.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          tech.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}>
-                          {tech.efficiencyRate}%
-                        </span>
+                        <span className={`inline-block px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-mono font-black text-[9px] sm:text-sm shadow-xs ${
+                          tech.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700' : tech.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
+                        }`}>{tech.efficiencyRate}%</span>
                       </td>
                     </tr>
                   ))}
-                  {currentTechsList.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="text-center py-12 text-gray-400 font-bold text-base">ไม่พบข้อมูลรายชื่อช่างในระบบ</td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
-            
-            {/* 🚀 นำ Pagination Component มาใช้งาน */}
-            {renderPagination(currentTechPage, totalTechPages, setCurrentTechPage, techsData.total, startIndex, ITEMS_PER_PAGE)}
+            {renderPagination(currentTechPage, totalTechPages, setCurrentTechPage, techsData.total, startIndex, GENERAL_ITEMS_PER_PAGE)}
           </div>
         </div>
       );
@@ -860,41 +752,27 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 font-sans overflow-hidden">
-      <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-20 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="เปิด/ปิด เมนู">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 flex-shrink-0 z-20 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
-          
-          <div className="flex items-center gap-2 mr-2">
-            <div className="bg-[#0B603A] text-white font-black italic rounded-full px-3 py-1 text-sm tracking-widest border-2 border-green-200 shadow-xs shrink-0">EVT</div>
-            <span className="font-black text-gray-800 text-sm hidden sm:block tracking-wide whitespace-nowrap">EVT Admin Panel</span>
+          <div className="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2">
+            <div className="bg-[#0B603A] text-white font-black italic rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm tracking-widest border border-green-200 shadow-xs shrink-0">EVT</div>
+            <span className="font-black text-gray-800 text-[11px] sm:text-sm hidden sm:block tracking-wide whitespace-nowrap">EVT Admin Panel</span>
           </div>
-          <div className="h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
-          
-          <h1 className="text-base font-black text-[#0B603A] truncate max-w-xs md:max-w-none">
-            {vehicleData !== undefined ? "ประวัติการซ่อมบำรุงรถ" : selectedWorkshopDetail ? `รายละเอียด: ${selectedWorkshopDetail.name}` : activeTab === 'dashboard' ? "Dashboard การซ่อมบำรุง" : activeTab === 'workshops' ? "อู่/ศูนย์ซ่อม" : "ทีมช่างและประสิทธิภาพ"}
+          <div className="h-5 sm:h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
+          <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
+            {vehicleData !== undefined ? "ประวัติรถ" : selectedWorkshopDetail ? `อู่: ${selectedWorkshopDetail.name}` : activeTab === 'dashboard' ? "Dashboard ซ่อมบำรุง" : activeTab === 'workshops' ? "อู่ซ่อม" : "ทีมช่าง"}
           </h1>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 py-1 px-2 select-none cursor-pointer hover:bg-gray-50 rounded-lg transition-colors">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-gray-800 leading-tight">testuser</p>
-              <p className="text-[11px] text-gray-500 font-bold leading-none mt-0.5">admins</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-[#0B603A] text-white flex items-center justify-center font-bold outline outline-2 outline-offset-2 outline-green-100 shadow-sm shrink-0">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-            </div>
-          </div>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className={`flex-shrink-0 transition-all duration-300 ease-in-out bg-white z-10 shadow-[4px_0_10px_rgba(0,0,0,0.02)] ${isSidebarOpen ? "w-64 opacity-100" : "w-0 opacity-0 overflow-hidden"}`}>
+      <div className="flex flex-1 overflow-hidden relative">
+        <div className={`absolute sm:relative flex-shrink-0 h-full transition-all duration-300 ease-in-out bg-white z-10 shadow-lg sm:shadow-none ${isSidebarOpen ? "w-64 opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-full"}`}>
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth w-full">
+        <main className="flex-1 overflow-y-auto p-2 sm:p-6 w-full">
           <div className="mx-auto max-w-[1400px]">
             {renderContent()}
           </div>
