@@ -107,12 +107,14 @@ export async function getDashboardStats() {
         }
       }
 
+      // จัดกลุ่มตามอู่และเจาะลึกสถิติช่าง
       const rawWorkshop = log.workshopName ? log.workshopName.trim() : "";
       if (rawWorkshop !== "") {
         if (!workshopMap.has(rawWorkshop)) {
           workshopMap.set(rawWorkshop, {
             name: rawWorkshop, totalJobs: 0, completedOnTime: 0, completedLate: 0, 
-            inProgress: 0, overdueActive: 0, totalRepairTimeMs: 0, repairCount: 0
+            inProgress: 0, overdueActive: 0, totalRepairTimeMs: 0, repairCount: 0,
+            techsMap: new Map() // 🚀 ผูก Map เก็บรายชื่อช่างย่อยในอู่นี้
           });
         }
         const wStats = workshopMap.get(rawWorkshop);
@@ -135,6 +137,32 @@ export async function getDashboardStats() {
         if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
           if (now > new Date(log.dueDate)) { wStats.overdueActive++; }
         }
+
+        // 🚀 คำนวณสถิติรายช่างเฉพาะบุคคล
+        const rawTech = log.technicianName ? log.technicianName.trim() : "";
+        if (rawTech !== "") {
+          if (!wStats.techsMap.has(rawTech)) {
+            wStats.techsMap.set(rawTech, {
+              name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0
+            });
+          }
+          const tStats = wStats.techsMap.get(rawTech);
+          tStats.totalJobs++;
+
+          if (log.status === 'completed') {
+            if (log.dueDate && log.completedAt) {
+              if (new Date(log.completedAt) <= new Date(log.dueDate)) { tStats.completedOnTime++; }
+              else { tStats.completedLate++; }
+            } else {
+              tStats.completedOnTime++;
+            }
+          } else if (log.status === 'in_progress') {
+            tStats.inProgress++;
+          }
+          if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && now > new Date(log.dueDate)) {
+            tStats.overdueActive++;
+          }
+        }
       }
     }
 
@@ -148,10 +176,37 @@ export async function getDashboardStats() {
       const totalClosed = w.completedOnTime + w.completedLate;
       const efficiencyRate = totalClosed > 0 ? (w.completedOnTime / totalClosed) * 100 : 0;
       const avgRepairHoursW = w.repairCount > 0 ? (w.totalRepairTimeMs / (1000 * 60 * 60)) / w.repairCount : 0;
+
+      // 🚀 แปลงสรุปข้อมูลช่างทุกคนในอู่นี้ ออกมาเป็น Array
+      const techniciansArray = Array.from(w.techsMap.values()).map((t: any) => {
+        const tClosed = t.completedOnTime + t.completedLate;
+        const tEfficiency = tClosed > 0 ? (t.completedOnTime / tClosed) * 100 : 0;
+        return {
+          name: t.name,
+          totalJobs: t.totalJobs,
+          successCount: t.completedOnTime,
+          inProgressCount: t.inProgress,
+          lateCount: t.completedLate + t.overdueActive,
+          efficiencyRate: Math.round(tEfficiency * 10) / 10
+        };
+      });
+
+      // 🚀 จัดอันดับพนักงานดีเด่นและผู้ที่ควรปรับปรุง (Top 3 และ Bottom 3) ของแต่ละอู่
+      const topTechnicians = [...techniciansArray]
+        .sort((a, b) => b.efficiencyRate - a.efficiencyRate || b.successCount - a.successCount)
+        .slice(0, 3);
+
+      const bottomTechnicians = [...techniciansArray]
+        .sort((a, b) => a.efficiencyRate - b.efficiencyRate || a.lateCount - b.lateCount)
+        .slice(0, 3);
+
       return {
         name: w.name, totalJobs: w.totalJobs, successCount: w.completedOnTime, 
         lateCount: w.completedLate + w.overdueActive, inProgressCount: w.inProgress, 
-        efficiencyRate: Math.round(efficiencyRate * 10) / 10, avgRepairHours: Math.round(avgRepairHoursW * 10) / 10 
+        efficiencyRate: Math.round(efficiencyRate * 10) / 10, avgRepairHours: Math.round(avgRepairHoursW * 10) / 10,
+        technicians: techniciansArray,     // ลิสต์ช่างทั้งหมด
+        topTechnicians,                   // พนักงานดีเด่น 3 อันดับแรก
+        bottomTechnicians                 // ประสิทธิภาพต่ำ 3 อันดับแรก
       };
     });
 

@@ -37,7 +37,6 @@ interface VehicleRecord {
   maintenanceHistory: MaintenanceLog[];
 }
 
-// STATUS_CONFIG: ปรับเปลี่ยนจาก text-black เป็น text-gray-800 (เทาเข้มจนใกล้ดำแต่ยังเห็นเทา) เรียบร้อยครับ
 const STATUS_CONFIG: Record<string, { text: string, color: string }> = {
   reported: { text: "แจ้งแล้ว", color: "bg-blue-50 text-blue-600 border-blue-200" },
   assigned: { text: "มอบหมายแล้ว", color: "bg-indigo-50 text-indigo-600 border-indigo-200" },
@@ -49,7 +48,6 @@ const STATUS_CONFIG: Record<string, { text: string, color: string }> = {
   cancelled: { text: "ยกเลิก", color: "bg-gray-100 text-gray-800 border-gray-300" },
 };
 
-// สีความเร่งด่วน: ต่ำเป็นสีฟ้า และปกติเป็นสีเขียวสด
 const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
   low: { text: "ต่ำ", color: "bg-blue-50 text-blue-600 border-blue-200" },
   normal: { text: "ปกติ", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
@@ -84,16 +82,22 @@ export default function Home() {
   const [stats, setStats] = useState<any>(null);
   const [searchInput, setSearchInput] = useState("");
   
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops' | 'technicians'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
+  // 🚀 ตั้งค่า default เป็น "all" เพื่อแสดงผลรวมทุกอู่
+  const [selectedWorkshop, setSelectedWorkshop] = useState("all");
+  
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentTechPage, setCurrentTechPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     const loadStats = async () => {
       const data = await getDashboardStats();
-      if (data) setStats(data);
+      if (data) {
+        setStats(data);
+      }
     };
     loadStats();
   }, []);
@@ -255,7 +259,7 @@ export default function Home() {
                   <span className="text-xl font-bold text-emerald-600 font-mono">{stats.efficiency.onTimeRate}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
-                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-50 h-1 rounded-full"></div>
+                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-500 h-1 rounded-full"></div>
                 </div>
               </div>
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
@@ -381,14 +385,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-
         </div>
       );
     }
 
     if (activeTab === 'workshops') {
       const totalWorkshops = stats.workshopsData?.length || 0;
-
       return (
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -454,6 +456,204 @@ export default function Home() {
         </div>
       );
     }
+
+    // 🚀 แท็บที่ 3: เมนู ทีมช่างและประสิทธิภาพ 
+    if (activeTab === 'technicians') {
+      let currentTechsList: any[] = [];
+      let topTechnicians: any[] = [];
+      let bottomTechnicians: any[] = [];
+      let totalTechsInWorkshop = 0;
+
+      // 🚀 หากเลือก 'all' ให้คำนวณสถิติรวมของช่างทั้งหมดจากทุกอู่ในระบบ
+      if (selectedWorkshop === "all") {
+        const allTechsMap = new Map();
+
+        stats.workshopsData?.forEach((w: any) => {
+          w.technicians?.forEach((t: any) => {
+            if (!allTechsMap.has(t.name)) {
+              allTechsMap.set(t.name, { ...t });
+            } else {
+              // ถ้ารายชื่อช่างซ้ำกัน ให้บวกรวมยอดงานเข้าด้วยกัน
+              const existing = allTechsMap.get(t.name);
+              existing.totalJobs += t.totalJobs;
+              existing.successCount += t.successCount;
+              existing.inProgressCount += t.inProgressCount;
+              existing.lateCount += t.lateCount;
+              
+              const tClosed = existing.successCount + existing.lateCount;
+              existing.efficiencyRate = tClosed > 0 ? Math.round((existing.successCount / tClosed) * 1000) / 10 : 0;
+            }
+          });
+        });
+
+        const allTechsArray = Array.from(allTechsMap.values());
+        totalTechsInWorkshop = allTechsArray.length;
+
+        topTechnicians = [...allTechsArray]
+          .sort((a, b) => b.efficiencyRate - a.efficiencyRate || b.successCount - a.successCount)
+          .slice(0, 3);
+
+        bottomTechnicians = [...allTechsArray]
+          .sort((a, b) => a.efficiencyRate - b.efficiencyRate || a.lateCount - b.lateCount)
+          .slice(0, 3);
+
+        const techStartIndex = (currentTechPage - 1) * ITEMS_PER_PAGE;
+        const techEndIndex = techStartIndex + ITEMS_PER_PAGE;
+        currentTechsList = allTechsArray.slice(techStartIndex, techEndIndex);
+
+      } else {
+        // หากเจาะจงเลือกดูรายอู่
+        const selectedWData = stats.workshopsData?.find((w: any) => w.name === selectedWorkshop);
+        totalTechsInWorkshop = selectedWData?.technicians?.length || 0;
+        topTechnicians = selectedWData?.topTechnicians || [];
+        bottomTechnicians = selectedWData?.bottomTechnicians || [];
+
+        const techStartIndex = (currentTechPage - 1) * ITEMS_PER_PAGE;
+        const techEndIndex = techStartIndex + ITEMS_PER_PAGE;
+        currentTechsList = selectedWData?.technicians?.slice(techStartIndex, techEndIndex) || [];
+      }
+
+      const totalTechPages = Math.max(1, Math.ceil(totalTechsInWorkshop / ITEMS_PER_PAGE));
+      const techStartIndexDisplay = (currentTechPage - 1) * ITEMS_PER_PAGE;
+
+      return (
+        <div className="flex flex-col gap-6">
+          
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col gap-1 w-full sm:w-72">
+              <label className="text-xs font-bold text-gray-500">กรุณาเลือกอู่/ศูนย์ซ่อมเพื่อตรวจสอบรายชื่อช่าง:</label>
+              <select 
+                value={selectedWorkshop}
+                onChange={(e) => { setSelectedWorkshop(e.target.value); setCurrentTechPage(1); }}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 text-sm font-bold text-[#0B603A] focus:outline-none focus:ring-2 focus:ring-[#0B603A]"
+              >
+                {/* 🚀 เพิ่มตัวเลือก "แสดงทั้งหมดทุกอู่" ด้านบนสุด */}
+                <option value="all">🌐 แสดงช่างทั้งหมดทุกอู่รวมกัน</option>
+                {stats.workshopsData?.map((w: any, i: number) => (
+                  <option key={i} value={w.name}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl py-3 px-6 text-center w-full sm:w-auto flex items-center gap-3">
+              <span className="text-2xl">👨‍💻</span>
+              <div className="text-left">
+                <span className="text-xs text-gray-500 font-bold block leading-none mb-1">
+                  {selectedWorkshop === "all" ? "จำนวนช่างทั้งหมดในระบบ" : "จำนวนช่างประจำอู่นี้"}
+                </span>
+                <span className="text-xl font-black text-[#0B603A] font-mono">{totalTechsInWorkshop} <span className="text-xs font-bold text-gray-400">คน</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-5 rounded-xl border border-emerald-200 shadow-2xs border-t-4 border-t-emerald-600">
+              <h4 className="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-2">🏆 ช่างผลงานดีเด่นสูงสุด 3 อันดับแรก (SLA %)</h4>
+              <div className="flex flex-col gap-2">
+                {topTechnicians?.map((t: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center p-2.5 rounded-lg bg-emerald-50/50 border border-emerald-100 text-xs font-semibold">
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">{idx + 1}</span>
+                      <span className="text-gray-800 text-sm">{t.name}</span>
+                    </div>
+                    <span className="font-mono bg-emerald-600 text-white px-2 py-0.5 rounded font-bold text-sm">{t.efficiencyRate}%</span>
+                  </div>
+                ))}
+                {(!topTechnicians || topTechnicians.length === 0) && <p className="text-center text-gray-400 py-4">ไม่มีข้อมูล</p>}
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-rose-200 shadow-2xs border-t-4 border-t-rose-500">
+              <h4 className="text-sm font-bold text-rose-800 mb-3 flex items-center gap-2">⚠️ ช่างที่ควรเข้าประเมินผลงาน 3 อันดับแรก (SLA ต่ำสุด)</h4>
+              <div className="flex flex-col gap-2">
+                {bottomTechnicians?.map((t: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center p-2.5 rounded-lg bg-rose-50/50 border border-rose-100 text-xs font-semibold">
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold">{idx + 1}</span>
+                      <span className="text-gray-800 text-sm">{t.name}</span>
+                    </div>
+                    <span className="font-mono bg-rose-500 text-white px-2 py-0.5 rounded font-bold text-sm">{t.efficiencyRate}%</span>
+                  </div>
+                ))}
+                {(!bottomTechnicians || bottomTechnicians.length === 0) && <p className="text-center text-gray-400 py-4">ไม่มีข้อมูล</p>}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h3 className="font-bold text-sm text-gray-800">
+                📋 ตารางผลงานช่างรายบุคคล ประจำ: {selectedWorkshop === "all" ? "ทุกอู่รวมกัน" : selectedWorkshop || "-"}
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-gray-500 bg-gray-50 border-b border-gray-200 text-xs">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold">ลำดับ</th>
+                    <th className="px-6 py-3 font-semibold">ชื่อ-นามสกุลช่าง</th>
+                    <th className="px-6 py-3 font-semibold text-center">งานทั้งหมด</th>
+                    <th className="px-6 py-3 font-semibold text-center">ซ่อมสำเร็จ (ทันกำหนด)</th>
+                    <th className="px-6 py-3 font-semibold text-center">กำลังซ่อมอยู่</th>
+                    <th className="px-6 py-3 font-semibold text-center">ล่าช้า / เกินกำหนด</th>
+                    <th className="px-6 py-3 font-semibold text-center">ประสิทธิภาพสะสม</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white text-xs">
+                  {currentTechsList.map((tech: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-gray-400">{techStartIndexDisplay + idx + 1}</td>
+                      <td className="px-6 py-4 font-bold text-gray-900">{tech.name}</td>
+                      <td className="px-6 py-4 text-center font-semibold text-gray-700">{tech.totalJobs}</td>
+                      <td className="px-6 py-4 text-center text-emerald-600 font-bold">{tech.successCount}</td>
+                      <td className="px-6 py-4 text-center text-amber-600 font-bold">{tech.inProgressCount}</td>
+                      <td className="px-6 py-4 text-center text-rose-600 font-bold">{tech.lateCount}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-2 py-0.5 rounded font-mono font-bold ${
+                          tech.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700' :
+                          tech.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700' :
+                          'bg-rose-50 text-rose-700'
+                        }`}>
+                          {tech.efficiencyRate}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {currentTechsList.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-8 text-gray-400 font-medium">ไม่พบข้อมูลรายชื่อช่าง</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {totalTechPages > 1 && (
+              <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 bg-gray-50/50">
+                <span>แสดง {techStartIndexDisplay + 1} - {Math.min(techStartIndexDisplay + ITEMS_PER_PAGE, totalTechsInWorkshop)} จาก {totalTechsInWorkshop} คน</span>
+                <div className="flex gap-1.5">
+                  <button 
+                    onClick={() => setCurrentTechPage(p => Math.max(p - 1, 1))} 
+                    disabled={currentTechPage === 1} 
+                    className="px-2.5 py-1 rounded border bg-white hover:bg-gray-50 disabled:opacity-50 font-medium"
+                  >
+                    ก่อนหน้า
+                  </button>
+                  <span className="px-2 py-1 text-gray-700 font-semibold">หน้า {currentTechPage} / {totalTechPages}</span>
+                  <button 
+                    onClick={() => setCurrentTechPage(p => Math.min(p + 1, totalTechPages))} 
+                    disabled={currentTechPage === totalTechPages} 
+                    className="px-2.5 py-1 rounded border bg-white hover:bg-gray-50 disabled:opacity-50 font-medium"
+                  >
+                    ถัดไป
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -471,7 +671,7 @@ export default function Home() {
           <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
           
           <h1 className="text-base font-bold text-[#0B603A]">
-            {vehicleData !== undefined ? "ประวัติการซ่อมบำรุงรถ" : activeTab === 'dashboard' ? "Dashboard การซ่อมบำรุง" : "อู่/ศูนย์ซ่อม"}
+            {vehicleData !== undefined ? "ประวัติการซ่อมบำรุงรถ" : activeTab === 'dashboard' ? "Dashboard การซ่อมบำรุง" : activeTab === 'workshops' ? "อู่/ศูนย์ซ่อม" : "ทีมช่างและประสิทธิภาพ"}
           </h1>
         </div>
         

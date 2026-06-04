@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 
 interface SidebarProps {
-  activeTab: 'dashboard' | 'workshops';
-  setActiveTab: (tab: 'dashboard' | 'workshops') => void;
+  activeTab: 'dashboard' | 'workshops' | 'technicians'; // 🚀 เพิ่มสถานะ technicians
+  setActiveTab: (tab: 'dashboard' | 'workshops' | 'technicians') => void;
 }
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
@@ -12,6 +12,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
   return (
     <aside className="w-full h-full bg-white border-r border-gray-200 flex flex-col shadow-sm">
+      {/* เมนู */}
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-3">
         <MenuItem icon="📊" label="แดชบอร์ดภาพรวม" />
         <MenuItem icon="🏢" label="โครงการ" />
@@ -20,6 +21,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         <MenuItem icon="🗺️" label="การเดินรถ" hasArrow />
         <MenuItem icon="🪪" label="คนขับรถ" hasArrow />
         
+        {/* หมวดหมู่ซ่อมบำรุง */}
         <div className="mt-2">
           <button 
             onClick={() => setIsMaintenanceOpen(!isMaintenanceOpen)}
@@ -49,6 +51,15 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 }`}
               >
                 อู่/ศูนย์ซ่อม
+              </div>
+              {/* 🚀 เมนูใหม่: ทีมช่างและประสิทธิภาพ */}
+              <div 
+                onClick={() => setActiveTab('technicians')}
+                className={`px-3 py-2 text-sm font-bold rounded-lg border-l-4 cursor-pointer transition-all ${
+                  activeTab === 'technicians' ? 'text-[#0B603A] bg-emerald-50 border-[#0B603A]' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 border-transparent'
+                }`}
+              >
+                ทีมช่างและประสิทธิภาพ
               </div>
             </div>
           )}
