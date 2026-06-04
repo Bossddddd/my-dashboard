@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
+import ImportButton from "../components/ImportButton"; // 🚀 นำเข้าคอมโพเนนต์ปุ่ม Import
 import { searchVehicleByPlate, getDashboardStats } from "./actions";
-
-type MaintenanceStatus = 'reported' | 'assigned' | 'in_progress' | 'blocked' | 'awaiting_qa' | 'completed' | 'cancelled';
-type MaintenancePriority = 'low' | 'normal' | 'high' | 'urgent';
 
 interface MaintenanceLog {
   maintenanceLogId: number;
@@ -15,8 +13,8 @@ interface MaintenanceLog {
   projectName?: string;
   workshopName?: string;
   technicianName?: string;
-  priority: MaintenancePriority;
-  status: MaintenanceStatus;
+  priority: string; 
+  status: string;   
   category?: string;
   description: string;
   symptoms?: string[];
@@ -39,42 +37,54 @@ interface VehicleRecord {
 }
 
 const STATUS_CONFIG: Record<string, { text: string, color: string }> = {
-  reported: { text: "แจ้งแล้ว", color: "bg-gray-100 text-gray-700 border-gray-200" },
-  assigned: { text: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  in_progress: { text: "กำลังซ่อม", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  blocked: { text: "ติดปัญหา (รออะไหล่)", color: "bg-red-100 text-red-700 border-red-200" },
-  awaiting_qa: { text: "รอตรวจงาน", color: "bg-purple-100 text-purple-700 border-purple-200" },
-  completed: { text: "เสร็จสิ้น", color: "bg-green-100 text-green-700 border-green-200" },
-  cancelled: { text: "ยกเลิก", color: "bg-gray-200 text-gray-500 border-gray-300" },
+  reported: { text: "แจ้งแล้ว", color: "bg-blue-50 text-blue-600 border-blue-200" },
+  assigned: { text: "มอบหมายแล้ว", color: "bg-indigo-50 text-indigo-600 border-indigo-200" },
+  in_progress: { text: "กำลังซ่อม", color: "bg-amber-50 text-amber-600 border-amber-200" },
+  blocked: { text: "ติดปัญหา (รออะไหล่)", color: "bg-rose-50 text-rose-600 border-rose-200" },
+  awaiting_qa: { text: "รอตรวจงาน", color: "bg-purple-50 text-purple-600 border-purple-200" },
+  completed: { text: "เสร็จสิ้น", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+  cancelled: { text: "ยกเลิก", color: "bg-gray-100 text-gray-500 border-gray-300" },
 };
 
 const PRIORITY_CONFIG: Record<string, { text: string, color: string }> = {
   low: { text: "ต่ำ", color: "bg-slate-50 text-slate-600 border-slate-200" },
   normal: { text: "ปกติ", color: "bg-blue-50 text-blue-600 border-blue-200" },
   high: { text: "สูง", color: "bg-orange-50 text-orange-700 border-orange-200" },
-  urgent: { text: "ด่วนที่สุด", color: "bg-red-50 text-red-700 border-red-200" },
+  urgent: { text: "ด่วนที่สุด", color: "bg-rose-50 text-rose-700 border-rose-200" },
 };
 
-const getStatusBadge = (status: MaintenanceStatus) => {
-  const config = STATUS_CONFIG[status] || { text: status, color: "bg-gray-100 border-gray-200" };
-  return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${config.color}`}>{config.text}</span>;
+const getStatusBadge = (status: string) => {
+  const config = STATUS_CONFIG[status] || { text: status || "-", color: "bg-gray-100 border-gray-200" };
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${config.color}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80"></span>
+      {config.text}
+    </div>
+  );
 };
 
-const getPriorityBadge = (priority: MaintenancePriority) => {
-  const config = PRIORITY_CONFIG[priority] || { text: priority, color: "bg-gray-50 border-gray-200" };
-  return <span className={`px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>{config.text}</span>;
+const getPriorityBadge = (priority: string) => {
+  const config = PRIORITY_CONFIG[priority] || { text: priority || "-", color: "bg-gray-50 border-gray-200" };
+  return <span className={`px-2 py-0.5 rounded text-xs font-bold border ${config.color}`}>{config.text}</span>;
 };
 
 const formatDateTime = (dateStr?: string) => {
-  if (!dateStr) return <span className="text-gray-400">ยังไม่มีข้อมูล</span>;
+  if (!dateStr) return <span className="text-gray-400">-</span>;
   return new Date(dateStr).toLocaleString('th-TH', {
-    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   }) + " น.";
 };
 
 export default function Home() {
   const [vehicleData, setVehicleData] = useState<VehicleRecord | null | undefined>(undefined);
   const [stats, setStats] = useState<any>(null);
+  const [searchInput, setSearchInput] = useState("");
+  
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     const loadStats = async () => {
@@ -84,9 +94,13 @@ export default function Home() {
     loadStats();
   }, []);
 
-  const handleSearchData = async (plate: string) => {
+  const executeSearch = async () => {
+    if (!searchInput.trim()) {
+      setVehicleData(undefined);
+      return;
+    }
     setVehicleData(undefined); 
-    const foundData = await searchVehicleByPlate(plate);
+    const foundData = await searchVehicleByPlate(searchInput.trim());
 
     if (foundData) {
       setVehicleData({
@@ -102,8 +116,8 @@ export default function Home() {
           projectName: log.projectName || undefined,
           workshopName: log.workshopName || undefined,
           technicianName: log.technicianName || undefined,
-          priority: log.priority as MaintenancePriority,
-          status: log.status as MaintenanceStatus,
+          priority: log.priority,
+          status: log.status,
           category: log.category || undefined,
           description: log.description,
           symptoms: log.symptoms ? log.symptoms.split(',') : [],
@@ -123,251 +137,379 @@ export default function Home() {
   };
 
   const renderContent = () => {
-    if (vehicleData === undefined) {
-      if (!stats) return <div className="text-center p-10 text-gray-500 font-medium">กำลังประมวลผลฐานข้อมูลสถิติภาพรวม...</div>;
+    if (!stats) return <div className="text-center p-10 text-gray-500 font-medium">กำลังประมวลผลข้อมูล...</div>;
 
-      const maxCount = Math.max(...stats.monthlyStats.map((m: any) => m.count), 1);
-      const maxCost = Math.max(...stats.monthlyStats.map((m: any) => m.cost), 1);
+    if (vehicleData !== undefined) {
+      if (vehicleData === null) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="text-5xl mb-3">🔍</div>
+            <h2 className="text-lg font-bold text-gray-800">ไม่พบข้อมูลยานพาหนะ</h2>
+            <p className="text-gray-500 text-sm mt-1">ไม่พบเลขทะเบียน <span className="font-bold text-gray-800">"{searchInput}"</span> ในระบบ</p>
+            <button onClick={() => {setSearchInput(""); setVehicleData(undefined);}} className="mt-4 text-xs bg-gray-100 text-gray-600 font-bold px-3 py-1.5 rounded-lg hover:bg-gray-200">กลับหน้าหลัก</button>
+          </div>
+        );
+      }
 
       return (
         <div className="flex flex-col gap-6">
-          <h1 className="text-2xl font-bold text-gray-800">📊 สถิติภาพรวมระบบแจ้งซ่อม</h1>
-          
-          {/* การ์ดสรุปยอด */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
-              <div className="text-gray-500 text-sm font-medium mb-1">รถยนต์ในระบบทั้งหมด</div>
-              <div className="text-4xl font-bold text-blue-600">{stats.totalVehicles} <span className="text-lg text-gray-400 font-normal">คัน</span></div>
-            </div>
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
-              <div className="text-gray-500 text-sm font-medium mb-1">ใบแจ้งซ่อมทั้งหมด</div>
-              <div className="text-4xl font-bold text-orange-500">{stats.totalLogs} <span className="text-lg text-gray-400 font-normal">รายการ</span></div>
-            </div>
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
-              <div className="text-gray-500 text-sm font-medium mb-1">ยอดค่าซ่อมรวมสุทธิ</div>
-              <div className="text-4xl font-bold text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-lg text-gray-400 font-normal">บาท</span></div>
-            </div>
-          </div>
-
-          {/* 🚀 บล็อกใหม่: ดัชนีวัดประสิทธิภาพการซ่อมบำรุง (Operational KPI) */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">⚡ ประสิทธิภาพการดำเนินงานและความเร็วในการบริการ (KPI Metrics)</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              {/* อัตราการซ่อมเสร็จทันกำหนด */}
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col justify-between">
-                <div>
-                  <span className="text-xs text-gray-500 font-medium block mb-1">ซ่อมเสร็จตามกำหนด (SLA)</span>
-                  <span className="text-2xl font-bold text-emerald-600 font-mono">{stats.efficiency.onTimeRate}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-500 h-1.5 rounded-full"></div>
-                </div>
-              </div>
-
-              {/* เวลาเฉลี่ยในการจ่ายงาน */}
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <span className="text-xs text-gray-500 font-medium block mb-1">เวลาเฉลี่ยในการจ่ายงานให้ช่าง</span>
-                <span className="text-2xl font-bold text-blue-600 font-mono">{stats.efficiency.avgResponseHours}</span>
-                <span className="text-xs text-gray-400 ml-1">ชั่วโมง / งาน</span>
-              </div>
-
-              {/* เวลาเฉลี่ยในการซ่อมจริง */}
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <span className="text-xs text-gray-500 font-medium block mb-1">เวลาเฉลี่ยที่ใช้ในการซ่อมจริง</span>
-                <span className="text-2xl font-bold text-purple-600 font-mono">{stats.efficiency.avgRepairHours}</span>
-                <span className="text-xs text-gray-400 ml-1">ชั่วโมง / งาน</span>
-              </div>
-
-              {/* งานคงค้างและล่าช้ากว่ากำหนด */}
-              <div className={`p-4 rounded-lg border flex flex-col justify-between ${stats.efficiency.overdueActiveCount > 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
-                <div>
-                  <span className="text-xs text-gray-500 font-medium block mb-1">งานคงค้างที่เลยกำหนดส่ง</span>
-                  <span className={`text-2xl font-bold font-mono ${stats.efficiency.overdueActiveCount > 0 ? 'text-rose-600' : 'text-gray-700'}`}>
-                    {stats.efficiency.overdueActiveCount}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-1">รายการ</span>
-                </div>
-                {stats.efficiency.overdueActiveCount > 0 && (
-                  <span className="text-[10px] font-bold text-rose-500 animate-pulse mt-1">⚠️ ต้องรีบดำเนินการจ่ายงานหรือเร่งช่าง</span>
-                )}
-              </div>
-
-            </div>
-          </div>
-
-          {/* กราฟสถิติรายเดือนย้อนหลัง 6 เดือน */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">📈 จำนวนใบแจ้งซ่อมแยกรายเดือน (6 เดือนล่าสุด)</h3>
-              <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
-                {stats.monthlyStats.map((item: any, idx: number) => {
-                  const heightPercent = (item.count / maxCount) * 100;
-                  return (
-                    <div key={idx} className="flex flex-1 flex-col items-center gap-2 h-full justify-end group">
-                      <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-50 px-1.5 py-0.5 rounded shadow-2xs mb-1">
-                        {item.count} งาน
-                      </span>
-                      <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t bg-blue-500 hover:bg-blue-600 transition-all shadow-xs group-hover:scale-x-105"></div>
-                      <span className="text-xs text-gray-500 truncate font-medium max-w-full">{item.label}</span>
-                    </div>
-                  );
-                })}
+          <button onClick={() => {setSearchInput(""); setVehicleData(undefined);}} className="text-xs font-bold text-gray-500 hover:text-[#0B603A] flex items-center gap-1 transition-colors">
+            ← กลับหน้าแดชบอร์ดหลัก
+          </button>
+          <h2 className="text-xl font-black text-[#0B603A]">ประวัติแจ้งซ่อมรถทะเบียน {vehicleData.vehiclePlate}</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-white p-5 rounded-xl border border-gray-200 text-xs">
+              <h3 className="font-bold text-sm text-gray-800 mb-4 pb-2 border-b">ข้อมูลทั่วไปยานพาหนะ</h3>
+              <div className="space-y-3">
+                <div><span className="text-gray-400 block mb-0.5">หมายเลขทะเบียน</span><span className="font-bold text-gray-900 text-sm">{vehicleData.vehiclePlate}</span></div>
+                <div><span className="text-gray-400 block mb-0.5">ยี่ห้อ / รุ่น</span><span className="font-medium text-gray-800">{vehicleData.brand || "-"} {vehicleData.model || "-"}</span></div>
               </div>
             </div>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">💰 ยอดค่าใช้จ่ายรวมสุทธิรายเดือน (6 เดือนล่าสุด)</h3>
-              <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
-                {stats.monthlyStats.map((item: any, idx: number) => {
-                  const heightPercent = (item.cost / maxCost) * 100;
-                  return (
-                    <div key={idx} className="flex flex-1 flex-col items-center gap-2 h-full justify-end group">
-                      <span className="text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-50 px-1 py-0.5 rounded shadow-2xs mb-1 truncate max-w-[120%]">
-                        {item.cost.toLocaleString()} ฿
-                      </span>
-                      <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t bg-emerald-500 hover:bg-emerald-600 transition-all shadow-xs group-hover:scale-x-105"></div>
-                      <span className="text-xs text-gray-500 truncate font-medium max-w-full">{item.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* สรุปแบบกลุ่มสถานะและความเร่งด่วน */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
-              <div className="flex flex-col gap-3">
-                {stats.statusCounts.map((item: any) => {
-                  const config = STATUS_CONFIG[item.status] || { text: item.status, color: "bg-gray-100" };
-                  return (
-                    <div key={item.status} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 border border-transparent transition-colors">
-                      <div className="flex items-center gap-3">
-                        <span className={`w-3 h-3 rounded-full ${config.color.split(' ')[0]}`}></span>
-                        <span className="text-sm text-gray-700 font-medium">{config.text}</span>
-                      </div>
-                      <span className="font-bold text-gray-800">{item.count} รายการ</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">สรุปตามความเร่งด่วน (Priority)</h3>
-              <div className="flex flex-col gap-3">
-                {stats.priorityCounts.map((item: any) => {
-                  const config = PRIORITY_CONFIG[item.priority] || { text: item.priority, color: "bg-gray-100" };
-                  return (
-                    <div key={item.priority} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 border border-transparent transition-colors">
-                      <div className="flex items-center gap-3">
-                         <span className={`px-2 py-1 rounded text-xs font-medium border ${config.color}`}>{config.text}</span>
-                      </div>
-                      <span className="font-bold text-gray-800">{item.count} รายการ</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-        </div>
-      );
-    }
-
-    if (vehicleData === null) {
-      return (
-        <div className="flex h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-red-200 bg-red-50 p-10 text-center shadow-sm">
-          <div className="mb-3 text-4xl">❌</div>
-          <h2 className="text-xl font-medium text-red-600">ไม่พบข้อมูลรถคันนี้ในระบบ</h2>
-          <p className="mt-2 text-red-400">ตรวจสอบเลขทะเบียนอีกครั้ง หรือทำการเพิ่มข้อมูลรถใหม่</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-900">{vehicleData.vehiclePlate}</h2>
-          <p className="mt-1 text-gray-500">
-            ยี่ห้อ/รุ่น: {vehicleData.brand || "-"} {vehicleData.model || "-"} (รหัสภายในรถ: {vehicleData.vehicleId})
-          </p>
-        </div>
-
-        <div>
-          <h3 className="mb-4 text-lg font-semibold text-gray-800">ประวัติการซ่อมบำรุงทั้งหมด</h3>
-          {vehicleData.maintenanceHistory.length === 0 ? (
-             <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-400">
-               รถคันนี้ยังไม่มีประวัติการแจ้งซ่อมในระบบ
-             </div>
-          ) : (
-            <div className="flex flex-col gap-6">
+            <div className="lg:col-span-2 flex flex-col gap-4">
               {vehicleData.maintenanceHistory.map((log) => (
-                <div key={log.maintenanceLogId} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded bg-gray-800 px-2 py-0.5 font-mono text-xs font-bold text-white">LOG-#{log.maintenanceLogId}</span>
-                      {getStatusBadge(log.status)}
-                      {getPriorityBadge(log.priority)}
-                      {log.category && (<span className="rounded bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-medium text-purple-700">ประเภท: {log.category}</span>)}
-                    </div>
+                <div key={log.maintenanceLogId} className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-bold text-sm text-[#0B603A]">ใบงานรหัส: #{log.maintenanceLogId}</span>
+                    {getStatusBadge(log.status)}
                   </div>
-                  <div className="mb-4">
-                    <h4 className="text-base font-semibold text-gray-900 mb-1">อาการ / รายละเอียดที่แจ้ง:</h4>
-                    <p className="text-gray-700 text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed">{log.description}</p>
+                  <p className="text-xs text-gray-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed">{log.description}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100 text-[11px] text-gray-500">
+                    <div><span>ช่างรับผิดชอบ:</span> <span className="font-bold text-gray-800 block">{log.technicianName || "-"}</span></div>
+                    <div><span>อู่/ศูนย์ซ่อม:</span> <span className="font-medium text-gray-800 block">{log.workshopName || "-"}</span></div>
+                    <div><span>วันที่แจ้ง:</span> <span className="font-medium text-gray-800 block">{formatDateTime(log.reportedAt)}</span></div>
+                    <div><span>กำหนดเสร็จ:</span> <span className="font-bold text-rose-600 block">{formatDateTime(log.dueDate)}</span></div>
                   </div>
-                  {log.symptoms && log.symptoms.length > 0 && log.symptoms[0] !== "" && (
-                    <div className="mb-5">
-                      <span className="text-xs text-gray-500 block mb-1.5 font-medium">แท็กอาการเสีย:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {log.symptoms.map((sym, index) => (
-                          <span key={index} className="rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-800 font-medium">⚠️ {sym.trim()}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm">
-                    <div><span className="text-gray-400 block text-xs">โครงการ / จุดให้บริการ:</span><span className="text-gray-800 font-medium">{log.projectName || "-"} {log.projectId && `(ID: ${log.projectId})`}</span></div>
-                    <div><span className="text-gray-400 block text-xs">อู่ / ศูนย์ซ่อม:</span><span className="text-gray-800 font-medium">{log.workshopName || "-"}</span></div>
-                    <div><span className="text-gray-400 block text-xs">จุดที่แจ้ง / ที่จอดซ่อม:</span><span className="text-gray-800 font-medium">{log.locationLabel || "-"}</span></div>
-                    <div><span className="text-gray-400 block text-xs">ช่างผู้รับผิดชอบงาน:</span><span className="text-gray-800 font-medium text-blue-700">{log.technicianName || "ยังไม่ระบุช่าง"}</span></div>
-                  </div>
-                  <div className="mb-4 border-t border-gray-100 pt-4">
-                    <span className="text-xs font-semibold text-gray-700 block mb-2">⏱️ บันทึกไทม์ไลน์เวลา:</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs text-gray-600">
-                      <div className="p-2 bg-white rounded border border-gray-100 shadow-2xs"><span className="text-gray-400 block">เวลาที่รับแจ้ง:</span><span className="font-medium text-gray-800">{formatDateTime(log.reportedAt)}</span></div>
-                      <div className="p-2 bg-white rounded border border-gray-100 shadow-2xs"><span className="text-gray-400 block">มอบหมายช่าง:</span><span className="font-medium text-gray-800">{formatDateTime(log.assignedAt)}</span></div>
-                      <div className="p-2 bg-white rounded border border-gray-100 shadow-2xs"><span className="text-gray-400 block">เวลาช่างรับงาน:</span><span className="font-medium text-gray-800">{formatDateTime(log.acceptedAt)}</span></div>
-                      <div className="p-2 bg-white rounded border border-gray-100 shadow-2xs"><span className="text-gray-400 block">เวลาเริ่มซ่อม:</span><span className="font-medium text-gray-800">{formatDateTime(log.startedAt)}</span></div>
-                      <div className="p-2 bg-white rounded border border-gray-100 shadow-2xs"><span className="text-gray-400 block">เวลาซ่อมเสร็จ:</span><span className="font-medium text-emerald-700">{formatDateTime(log.completedAt)}</span></div>
-                      <div className="p-2 bg-orange-50/50 rounded border border-orange-100 shadow-2xs"><span className="text-orange-500 block font-medium">กำหนดเสร็จสิ้น:</span><span className="font-medium text-gray-800">{formatDateTime(log.dueDate)}</span></div>
-                    </div>
-                  </div>
-                  {log.cost !== undefined && (
-                    <div className="mt-4 flex justify-end items-center border-t border-gray-100 pt-3 bg-emerald-50/40 -mx-6 -mb-6 p-4 rounded-b-xl border border-emerald-100/50">
-                      <div className="text-sm text-emerald-800 font-medium mr-2">สรุปค่าซ่อมรวมสุทธิ:</div>
-                      <div className="text-xl font-bold text-emerald-700 font-mono">{log.cost.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿</div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (activeTab === 'dashboard') {
+      const maxCount = Math.max(...stats.monthlyStats.map((m: any) => m.count), 1);
+      const maxCost = Math.max(...stats.monthlyStats.map((m: any) => m.cost), 1);
+
+      const totalOverdueItems = stats.overdueTasks?.length || 0;
+      const totalPages = Math.ceil(totalOverdueItems / ITEMS_PER_PAGE);
+      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+      const currentOverdueTasks = stats.overdueTasks?.slice(startIndex, startIndex + ITEMS_PER_PAGE) || [];
+
+      return (
+        <div className="flex flex-col gap-6">
+          
+          {/* 🚀 1. โซนแถบค้นหาและปุ่มนำเข้าข้อมูลแบบอัปเดตใหม่ */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs flex flex-col sm:flex-row justify-between items-center gap-4">
+            {/* กล่องค้นหาที่ลดขนาด (max-w-md) และเปลี่ยน placeholder เป็นสีเทาเข้ม (placeholder-gray-600) */}
+            <div className="flex w-full sm:max-w-md relative">
+              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input 
+                type="text" 
+                placeholder="ค้นหาทะเบียนรถ (ตัวอย่าง: 34-3276)" 
+                className="w-full pl-10 pr-24 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder-gray-600 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0B603A] transition-all"
+                value={searchInput} 
+                onChange={(e) => setSearchInput(e.target.value)} 
+                onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
+              />
+              <button 
+                onClick={executeSearch} 
+                className="absolute right-1.5 top-1.5 bg-[#0B603A] hover:bg-[#08482b] text-white px-4 py-1 rounded-md text-xs font-bold transition-colors"
+              >
+                ค้นหา
+              </button>
+            </div>
+            
+            {/* 🚀 เรียกปุ่ม ImportButton กลับมาไว้มุมขวา */}
+            <div className="w-full sm:w-auto flex-shrink-0">
+               <ImportButton />
+            </div>
+          </div>
+
+          {/* 2. การ์ดสรุปยอดภาพรวม */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-[#0B603A]">
+              <div className="text-gray-400 text-xs font-bold mb-0.5">รถยนต์ในระบบทั้งหมด</div>
+              <div className="text-2xl font-black text-[#0B603A]">{stats.totalVehicles} <span className="text-xs font-normal text-gray-400">คัน</span></div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-amber-500">
+              <div className="text-gray-400 text-xs font-bold mb-0.5">ใบแจ้งซ่อมทั้งหมด</div>
+              <div className="text-2xl font-black text-amber-600">{stats.totalLogs} <span className="text-xs font-normal text-gray-400">รายการ</span></div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-emerald-600">
+              <div className="text-gray-400 text-xs font-bold mb-0.5">ยอดค่าซ่อมรวมสุทธิ</div>
+              <div className="text-2xl font-black text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-xs font-normal text-gray-400">บาท</span></div>
+            </div>
+          </div>
+
+          {/* 3. ดัชนีวิเคราะห์ประสิทธิภาพเชิงลึก */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
+            <h3 className="text-xs font-bold text-gray-800 mb-4 flex items-center gap-2">⚡ ประสิทธิภาพการดำเนินงานและความเร็วในการบริการ (KPI Metrics)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col justify-between">
+                <div>
+                  <span className="text-gray-500 block mb-1">ซ่อมเสร็จตามกำหนด (SLA)</span>
+                  <span className="text-xl font-bold text-emerald-600 font-mono">{stats.efficiency.onTimeRate}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1 mt-2">
+                  <div style={{ width: `${stats.efficiency.onTimeRate}%` }} className="bg-emerald-500 h-1 rounded-full"></div>
+                </div>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <span className="text-gray-500 block mb-1">เวลาเฉลี่ยในการจ่ายงานให้ช่าง</span>
+                <span className="text-xl font-bold text-blue-600 font-mono">{stats.efficiency.avgResponseHours}</span>
+                <span className="text-xs text-gray-400 ml-1">ชั่วโมง / งาน</span>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <span className="text-gray-500 block mb-1">เวลาเฉลี่ยที่ใช้ในการซ่อมจริง</span>
+                <span className="text-xl font-bold text-purple-600 font-mono">{stats.efficiency.avgRepairHours}</span>
+                <span className="text-xs text-gray-400 ml-1">ชั่วโมง / งาน</span>
+              </div>
+              <div className={`p-4 rounded-lg border flex flex-col justify-between ${stats.efficiency.overdueActiveCount > 0 ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                <div>
+                  <span className="text-gray-500 block mb-1">งานคงค้างที่เลยกำหนดส่ง</span>
+                  <span className={`text-xl font-bold font-mono ${stats.efficiency.overdueActiveCount > 0 ? 'text-rose-600' : 'text-gray-700'}`}>{stats.efficiency.overdueActiveCount}</span>
+                  <span className="text-xs text-gray-400 ml-1">รายการ</span>
+                </div>
+                {stats.efficiency.overdueActiveCount > 0 && <span className="text-[10px] font-bold text-rose-500 animate-pulse mt-1">⚠️ เกินกำหนดเวลาส่งมอบ</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. กราฟแท่ง Pure Tailwind CSS ย้อนหลัง 6 เดือน */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
+              <h3 className="text-xs font-bold text-gray-800 mb-6">📈 จำนวนใบแจ้งซ่อมแยกรายเดือน (6 เดือนล่าสุด)</h3>
+              <div className="flex h-40 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
+                {stats.monthlyStats.map((item: any, idx: number) => {
+                  const heightPercent = (item.count / maxCount) * 100;
+                  return (
+                    <div key={idx} className="flex flex-1 flex-col items-center h-full justify-end group">
+                      <span className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-50 px-1.5 py-0.5 rounded mb-0.5 whitespace-nowrap">{item.count} งาน</span>
+                      <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t bg-blue-500 hover:bg-blue-600 transition-all group-hover:scale-x-105"></div>
+                      <span className="text-[10px] text-gray-500 truncate max-w-full font-medium mt-1">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
+              <h3 className="text-xs font-bold text-gray-800 mb-6">💰 ยอดค่าใช้จ่ายรวมสุทธิรายเดือน (6 เดือนล่าสุด)</h3>
+              <div className="flex h-40 items-end justify-between gap-2 border-b border-gray-200 pb-2 px-2">
+                {stats.monthlyStats.map((item: any, idx: number) => {
+                  const heightPercent = (item.cost / maxCost) * 100;
+                  return (
+                    <div key={idx} className="flex flex-1 flex-col items-center h-full justify-end group">
+                      <span className="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-50 px-1 py-0.5 rounded mb-0.5 truncate max-w-[110%]">{item.cost.toLocaleString()} ฿</span>
+                      <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t bg-emerald-500 hover:bg-emerald-600 transition-all group-hover:scale-x-105"></div>
+                      <span className="text-[10px] text-gray-500 truncate max-w-full font-medium mt-1">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 5. ตารางแสดงรายการงานที่ล่าช้าเกินกำหนด + ระบบแบ่งหน้า */}
+          {totalOverdueItems > 0 && (
+            <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 bg-rose-50/40">
+                <h3 className="font-bold text-sm text-rose-700 flex items-center gap-2">🚨 รายการแจ้งซ่อมที่เกินกำหนด ({totalOverdueItems} รายการ)</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-gray-500 bg-gray-50 border-b border-gray-200 text-xs">
+                    <tr>
+                      <th className="px-6 py-3 font-semibold">ลำดับ</th>
+                      <th className="px-6 py-3 font-semibold">ทะเบียนรถ</th>
+                      <th className="px-6 py-3 font-semibold">รายละเอียด / อาการ</th>
+                      <th className="px-6 py-3 font-semibold">ช่างที่รับผิดชอบ</th>
+                      <th className="px-6 py-3 font-semibold">สถานะ</th>
+                      <th className="px-6 py-3 font-semibold">กำหนดส่งเดิม</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white text-xs">
+                    {currentOverdueTasks.map((task: any, idx: number) => (
+                      <tr key={task.id} className="hover:bg-rose-50/30 transition-colors">
+                        <td className="px-6 py-3.5 text-gray-400">{startIndex + idx + 1}</td>
+                        <td className="px-6 py-3.5 font-bold text-gray-900">{task.plate || "-"}</td>
+                        <td className="px-6 py-3.5 text-gray-600 max-w-[220px] truncate">{task.description}</td>
+                        <td className="px-6 py-3.5 text-blue-600 font-medium">{task.technicianName || "ยังไม่จ่ายงาน"}</td>
+                        <td className="px-6 py-3.5">{getStatusBadge(task.status)}</td>
+                        <td className="px-6 py-3.5 font-bold text-rose-600">{formatDateTime(task.dueDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 bg-gray-50/50">
+                  <span>แสดง {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, totalOverdueItems)} จาก {totalOverdueItems} รายการ</span>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-2.5 py-1 rounded border bg-white hover:bg-gray-50 disabled:opacity-50">ก่อนหน้า</button>
+                    <span className="px-2 py-1 text-gray-700 font-semibold">หน้า {currentPage} / {totalPages}</span>
+                    <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-2.5 py-1 rounded border bg-white hover:bg-gray-50 disabled:opacity-50">ถัดไป</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 6. กล่องสรุปสถิติตามกลุ่มสถานะและกลุ่มความเร่งด่วน */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
+              <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
+              <div className="flex flex-col gap-2">
+                {stats.statusCounts.map((item: any) => {
+                  const config = STATUS_CONFIG[item.status] || { text: item.status, color: "bg-gray-100" };
+                  return (
+                    <div key={item.status} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${config.color.split(' ')[0]}`}></span>
+                        <span className="text-gray-700 font-medium">{config.text}</span>
+                      </div>
+                      <span className="font-bold text-gray-800">{item.count} รายการ</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs">
+              <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">สรุปตามความเร่งด่วน (Priority)</h3>
+              <div className="flex flex-col gap-2">
+                {stats.priorityCounts.map((item: any) => {
+                  const config = PRIORITY_CONFIG[item.priority] || { text: item.priority, color: "bg-gray-100" };
+                  return (
+                    <div key={item.priority} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                      <div className="flex items-center gap-3">
+                         <span className="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
+                         <span className="text-gray-700 font-medium">{config.text}</span>
+                      </div>
+                      <span className="font-bold text-gray-800">{item.count} รายการ</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    if (activeTab === 'workshops') {
+      const totalWorkshops = stats.workshopsData?.length || 0;
+
+      return (
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-[#0B603A]">
+              <div className="text-gray-400 text-xs font-bold mb-0.5">จำนวนอู่ในระบบทั้งหมด</div>
+              <div className="text-2xl font-black text-[#0B603A]">{totalWorkshops} <span className="text-xs font-normal text-gray-400">อู่</span></div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-blue-500">
+              <div className="text-gray-400 text-xs font-bold mb-0.5">อู่ที่มีประสิทธิภาพ SLA สูงสุด (&gt;=80%)</div>
+              <div className="text-2xl font-black text-blue-600">
+                {stats.workshopsData.filter((w: any) => w.efficiencyRate >= 80).length} <span className="text-xs font-normal text-gray-400">อู่</span>
+              </div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs border-t-4 border-t-rose-500">
+              <div className="text-gray-400 text-xs font-bold mb-0.5">อู่ที่ตรวจพบงานล่าช้าสะสม</div>
+              <div className="text-2xl font-black text-rose-600">
+                {stats.workshopsData.filter((w: any) => w.lateCount > 0).length} <span className="text-xs font-normal text-gray-400">อู่</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-xs border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50">
+              <h3 className="font-bold text-sm text-gray-800">📊 ตารางวิเคราะห์ประสิทธิภาพและปริมาณงานแยกตาม อู่/ศูนย์ซ่อม</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-gray-500 bg-gray-50 border-b border-gray-200 text-xs">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold">ชื่ออู่ / ศูนย์บริการ</th>
+                    <th className="px-6 py-3 font-semibold text-center">งานซ่อมทั้งหมด</th>
+                    <th className="px-6 py-3 font-semibold text-center">ซ่อมสำเร็จ (ทันกำหนด)</th>
+                    <th className="px-6 py-3 font-semibold text-center">กำลังซ่อมอยู่</th>
+                    <th className="px-6 py-3 font-semibold text-center">งานล่าช้า / เลยกำหนด</th>
+                    <th className="px-6 py-3 font-semibold text-center">เวลาซ่อมเฉลี่ย</th>
+                    <th className="px-6 py-3 font-semibold text-center">อัตราสำเร็จ (SLA %)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white text-xs">
+                  {stats.workshopsData.map((workshop: any, index: number) => (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-gray-900">{workshop.name}</td>
+                      <td className="px-6 py-4 text-center font-semibold text-gray-700">{workshop.totalJobs}</td>
+                      <td className="px-6 py-4 text-center text-emerald-600 font-bold">{workshop.successCount}</td>
+                      <td className="px-6 py-4 text-center text-amber-600 font-bold">{workshop.inProgressCount}</td>
+                      <td className="px-6 py-4 text-center text-rose-600 font-bold">{workshop.lateCount}</td>
+                      <td className="px-6 py-4 text-center font-mono text-gray-600">{workshop.avgRepairHours} ชม.</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-2 py-1 rounded-md font-mono font-bold ${
+                          workshop.efficiencyRate >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          workshop.efficiencyRate >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          {workshop.efficiencyRate}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
-    <div className="flex h-screen flex-col antialiased bg-gray-50">
-      <Navbar onSearch={handleSearchData} />
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="mx-auto max-w-4xl">
-          {renderContent()}
+    <div className="flex flex-col h-screen bg-gray-50 font-sans overflow-hidden">
+      <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-20 shadow-sm">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100" title="เปิด/ปิด เมนู">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          
+          <div className="flex items-center gap-2 mr-2">
+            <div className="bg-[#0B603A] text-white font-black italic rounded-full px-3 py-1 text-sm tracking-widest border-2 border-green-200">EVT</div>
+            <span className="font-bold text-gray-800 text-sm hidden sm:block">EVT Admin Panel</span>
+          </div>
+          <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+          
+          <h1 className="text-base font-bold text-[#0B603A]">
+            {vehicleData !== undefined ? "ประวัติการซ่อมบำรุงรถ" : activeTab === 'dashboard' ? "Dashboard การซ่อมบำรุง" : "อู่/ศูนย์ซ่อม"}
+          </h1>
         </div>
-      </main>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2.5 py-1 px-2 select-none">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-bold text-gray-800 leading-tight">testuser</p>
+              <p className="text-[10px] text-gray-400 font-bold leading-none">admins</p>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-[#0B603A] text-white flex items-center justify-center font-bold outline outline-2 outline-offset-2 outline-green-50">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className={`flex-shrink-0 transition-all duration-300 ease-in-out bg-white ${isSidebarOpen ? "w-64 opacity-100" : "w-0 opacity-0 overflow-hidden"}`}>
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
+        <main className="flex-1 overflow-y-auto p-6 scroll-smooth w-full">
+          <div className="mx-auto max-w-7xl">{renderContent()}</div>
+        </main>
+      </div>
     </div>
   );
 }

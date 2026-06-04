@@ -2,7 +2,12 @@
 
 import { prisma } from "../lib/prisma";
 
-// 1. ฟังก์ชันค้นหาข้อมูลรถ
+const parseSafeDate = (val: any) => {
+  if (!val || String(val).trim() === "") return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 export async function searchVehicleByPlate(plate: string) {
   try {
     return await prisma.vehicle.findUnique({
@@ -15,7 +20,7 @@ export async function searchVehicleByPlate(plate: string) {
   }
 }
 
-// 2. ฟังก์ชันดึงสถิติภาพรวม + กราฟรายเดือน + ประสิทธิภาพ KPI
+// 🚀 ฟังก์ชันดึงสถิติภาพรวม + วิเคราะห์ข้อมูลแยกรายอู่/ศูนย์ซ่อม
 export async function getDashboardStats() {
   try {
     const totalVehicles = await prisma.vehicle.count();
@@ -25,7 +30,7 @@ export async function getDashboardStats() {
     const priorityGroups = await prisma.maintenanceLog.groupBy({ by: ['priority'], _count: { id: true } });
     const costAgg = await prisma.maintenanceLog.aggregate({ _sum: { cost: true } });
 
-    // --- ส่วนที่ 1: คำนวณสถิติย้อนหลัง 6 เดือนล่าสุดสำหรับทำกราฟ ---
+    // สถิติรายเดือนย้อนหลัง 6 เดือน
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
@@ -59,15 +64,12 @@ export async function getDashboardStats() {
     }
     const monthlyStats = Array.from(monthlyMap.values()).reverse();
 
-    // --- 🚀 ส่วนที่ 2: คำนวณประสิทธิภาพการทำงาน (Efficiency Metrics KPI) ---
+    // ดึงข้อมูลประวัติทั้งหมดเพื่อนำมาคำนวณระดับประสิทธิภาพทั่วไปและคัดแยกตามอู่
     const allLogs = await prisma.maintenanceLog.findMany({
-      select: {
-        status: true,
-        reportedAt: true,
-        assignedAt: true,
-        startedAt: true,
-        completedAt: true,
-        dueDate: true,
+      select: { 
+        id: true, status: true, priority: true, description: true, technicianName: true,
+        reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, workshopName: true,
+        vehicle: { select: { plate: true } }
       }
     });
 
@@ -78,48 +80,106 @@ export async function getDashboardStats() {
     let totalRepairTimeMs = 0;
     let repairCount = 0;
     let overdueActiveCount = 0;
-
+    
+    const overdueTasks = [];
+    const workshopMap = new Map(); // 🚀 Map สำหรับจัดกลุ่มตามชื่ออู่
     const now = new Date();
 
     for (const log of allLogs) {
-      // 1. หาอัตราการซ่อมเสร็จทันกำหนด (เปรียบเทียบ completedAt กับ dueDate)
+      // 1. คำนวณภาพรวมระบบ
       if (log.status === 'completed' && log.completedAt) {
         totalCompleted++;
         if (log.dueDate && new Date(log.completedAt) <= new Date(log.dueDate)) {
           onTimeCompleted++;
         }
       }
-
-      // 2. หาเวลาเฉลี่ยในการจ่ายงาน (reportedAt -> assignedAt)
       if (log.reportedAt && log.assignedAt) {
         const diff = new Date(log.assignedAt).getTime() - new Date(log.reportedAt).getTime();
-        if (diff >= 0) {
-          totalResponseTimeMs += diff;
-          responseCount++;
-        }
+        if (diff >= 0) { totalResponseTimeMs += diff; responseCount++; }
       }
-
-      // 3. หาเวลาเฉลี่ยที่ใช้ในการซ่อมจริง (startedAt -> completedAt)
       if (log.status === 'completed' && log.startedAt && log.completedAt) {
         const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
-        if (diff >= 0) {
-          totalRepairTimeMs += diff;
-          repairCount++;
+        if (diff >= 0) { totalRepairTimeMs += diff; repairCount++; }
+      }
+      if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
+        if (now > new Date(log.dueDate)) { 
+          overdueActiveCount++; 
+          overdueTasks.push({
+            id: log.id, plate: log.vehicle?.plate, description: log.description,
+            technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate
+          });
         }
       }
 
-      // 4. หางานคงค้างที่ล่าช้ากว่ากำหนด (ยังไม่เสร็จ, ไม่ถูกยกเลิก และเลย dueDate แล้ว)
-      if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
-        if (now > new Date(log.dueDate)) {
-          overdueActiveCount++;
+      // 🚀 2. คัดแยกและคำนวณสถิติละเอียดรายอู่/ศูนย์ซ่อม
+      const rawWorkshop = log.workshopName ? log.workshopName.trim() : "";
+      if (rawWorkshop !== "") { // นับเฉพาะข้อมูลที่มีระบุชื่ออู่ชัดเจน
+        if (!workshopMap.has(rawWorkshop)) {
+          workshopMap.set(rawWorkshop, {
+            name: rawWorkshop,
+            totalJobs: 0,
+            completedOnTime: 0,   // ซ่อมสำเร็จทันกำหนด
+            completedLate: 0,     // ซ่อมสำเร็จแต่ล่าช้ากว่ากำหนด
+            inProgress: 0,         // กำลังซ่อมอยู่
+            overdueActive: 0,     // งานค้างดองเค็มจนเลยกำหนดส่ง
+            totalRepairTimeMs: 0,
+            repairCount: 0
+          });
+        }
+
+        const wStats = workshopMap.get(rawWorkshop);
+        wStats.totalJobs++;
+
+        if (log.status === 'completed') {
+          if (log.dueDate && log.completedAt) {
+            if (new Date(log.completedAt) <= new Date(log.dueDate)) {
+              wStats.completedOnTime++;
+            } else {
+              wStats.completedLate++;
+            }
+          } else {
+            wStats.completedOnTime++; // fallback
+          }
+
+          if (log.startedAt && log.completedAt) {
+            const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
+            if (diff >= 0) { wStats.totalRepairTimeMs += diff; wStats.repairCount++; }
+          }
+        } else if (log.status === 'in_progress') {
+          wStats.inProgress++;
+        }
+
+        // งานคงค้างที่ดองเกินกำหนดส่งของอู่นั้นๆ
+        if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
+          if (now > new Date(log.dueDate)) {
+            wStats.overdueActive++;
+          }
         }
       }
     }
 
-    // แปลงมิลลิวินาทีให้กลายเป็นชั่วโมง
+    overdueTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
     const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
     const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
     const onTimeRate = totalCompleted > 0 ? (onTimeCompleted / totalCompleted) * 100 : 0;
+
+    // 🚀 แปลงโครงสร้างข้อมูลอู่เพื่อส่งออกไปวาดหน้า Dashboard รายอู่
+    const workshopsData = Array.from(workshopMap.values()).map((w: any) => {
+      const totalClosed = w.completedOnTime + w.completedLate;
+      const efficiencyRate = totalClosed > 0 ? (w.completedOnTime / totalClosed) * 100 : 0;
+      const avgRepairHoursW = w.repairCount > 0 ? (w.totalRepairTimeMs / (1000 * 60 * 60)) / w.repairCount : 0;
+
+      return {
+        name: w.name,
+        totalJobs: w.totalJobs,
+        successCount: w.completedOnTime, // สำเร็จ (ในเวลา)
+        lateCount: w.completedLate + w.overdueActive, // ล่าช้า (ส่งเลท + ค้างเน่า)
+        inProgressCount: w.inProgress, // กำลังซ่อมอยู่
+        efficiencyRate: Math.round(efficiencyRate * 10) / 10, // ประสิทธิภาพ SLA อู่
+        avgRepairHours: Math.round(avgRepairHoursW * 10) / 10  // ความเร็วเฉลี่ยในการซ่อม
+      };
+    });
 
     return {
       totalVehicles,
@@ -128,13 +188,14 @@ export async function getDashboardStats() {
       priorityCounts: priorityGroups.map((p: any) => ({ priority: p.priority, count: p._count.id })),
       totalCost: costAgg._sum.cost || 0,
       monthlyStats,
-      // ส่งข้อมูล KPI ออกไปหน้าบ้าน
       efficiency: {
-        onTimeRate: Math.round(onTimeRate * 10) / 10, // ทศนิยม 1 ตำแหน่ง
+        onTimeRate: Math.round(onTimeRate * 10) / 10,
         avgResponseHours: Math.round(avgResponseHours * 10) / 10,
         avgRepairHours: Math.round(avgRepairHours * 10) / 10,
         overdueActiveCount
-      }
+      },
+      overdueTasks,
+      workshopsData // 🚀 ส่งข้อมูลสรุปสถิติมัดรวมของแต่ละอู่ออกไป
     };
   } catch (error) {
     console.error("Stats Error:", error);
@@ -142,10 +203,19 @@ export async function getDashboardStats() {
   }
 }
 
-// 3. ฟังก์ชันนำเข้าข้อมูล (Bulk Insert เหมือนเดิม)
+// ฟังก์ชันนำเข้าข้อมูล (เหมือนเดิม)
 export async function importMaintenanceData(rows: any[]) {
   try {
-    const validRows = rows.filter(r => r.plate);
+    const cleanRows = rows.map(row => {
+      const cleanRow: any = {};
+      for (const key of Object.keys(row)) {
+        const cleanKey = key.replace(/^\uFEFF/, '').trim();
+        cleanRow[cleanKey] = row[key];
+      }
+      return cleanRow;
+    });
+
+    const validRows = cleanRows.filter(r => r.plate);
     if (validRows.length === 0) return { success: false, message: "ไม่พบข้อมูลรถในไฟล์" };
 
     const uniquePlates = [...new Set(validRows.map(r => String(r.plate).trim()))];
@@ -195,13 +265,12 @@ export async function importMaintenanceData(rows: any[]) {
         symptoms: row.symptoms ? String(row.symptoms).trim() : null,
         locationLabel: row.locationLabel ? String(row.locationLabel).trim() : null,
         cost: row.cost ? parseFloat(row.cost) : null,
-        
-        reportedAt: row.reportedAt ? new Date(row.reportedAt) : new Date(),
-        assignedAt: row.assignedAt ? new Date(row.assignedAt) : null,
-        acceptedAt: row.acceptedAt ? new Date(row.acceptedAt) : null,
-        startedAt: row.startedAt ? new Date(row.startedAt) : null,
-        completedAt: row.completedAt ? new Date(row.completedAt) : null,
-        dueDate: row.dueDate ? new Date(row.dueDate) : null,
+        reportedAt: parseSafeDate(row.reportedAt) || new Date(),
+        assignedAt: parseSafeDate(row.assignedAt),
+        acceptedAt: parseSafeDate(row.acceptedAt),
+        startedAt: parseSafeDate(row.startedAt),
+        completedAt: parseSafeDate(row.completedAt),
+        dueDate: parseSafeDate(row.dueDate),
       });
     }
 
@@ -212,6 +281,6 @@ export async function importMaintenanceData(rows: any[]) {
     return { success: true, message: `นำเข้าข้อมูลสำเร็จ` };
   } catch (error) {
     console.error("Import Error:", error);
-    return { success: false, message: "เกิดข้อผิดพลาดในการนำเข้าข้อมูล" };
+    return { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึกข้อมูล" };
   }
 }
