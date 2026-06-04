@@ -8,6 +8,11 @@ const parseSafeDate = (val: any) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
+const calculateSlaRate = (onTimeCount: number, lateCount: number) => {
+  const slaTotal = onTimeCount + lateCount;
+  return slaTotal > 0 ? (onTimeCount / slaTotal) * 100 : 0;
+};
+
 export async function searchVehicleByPlate(plate: string) {
   try {
     return await prisma.vehicle.findUnique({
@@ -185,23 +190,24 @@ export async function getDashboardStats() {
 
     const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
     const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
-    const onTimeRate = totalCompleted > 0 ? (onTimeCompleted / totalCompleted) * 100 : 0;
+    const completedLateCount = totalCompleted - onTimeCompleted;
+    const onTimeRate = calculateSlaRate(onTimeCompleted, completedLateCount + overdueActiveCount);
 
     const workshopsData = Array.from(workshopMap.values()).map((w: any) => {
-      const totalClosed = w.completedOnTime + w.completedLate;
-      const efficiencyRate = totalClosed > 0 ? (w.completedOnTime / totalClosed) * 100 : 0;
+      const lateCount = w.completedLate + w.overdueActive;
+      const efficiencyRate = calculateSlaRate(w.completedOnTime, lateCount);
       const avgRepairHoursW = w.repairCount > 0 ? (w.totalRepairTimeMs / (1000 * 60 * 60)) / w.repairCount : 0;
       return {
         name: w.name, totalJobs: w.totalJobs, successCount: w.completedOnTime, 
-        lateCount: w.completedLate + w.overdueActive, inProgressCount: w.inProgress, 
+        lateCount, inProgressCount: w.inProgress, 
         efficiencyRate: Math.round(efficiencyRate * 10) / 10, avgRepairHours: Math.round(avgRepairHoursW * 10) / 10,
         logs: w.logs, 
         technicians: Array.from(w.techsMap.values()).map((t: any) => {
-          const tClosed = t.completedOnTime + t.completedLate;
-          const tEfficiency = tClosed > 0 ? (t.completedOnTime / tClosed) * 100 : 0;
+          const tLateCount = t.completedLate + t.overdueActive;
+          const tEfficiency = calculateSlaRate(t.completedOnTime, tLateCount);
           return {
             name: t.name, totalJobs: t.totalJobs, successCount: t.completedOnTime,
-            inProgressCount: t.inProgress, lateCount: t.completedLate + t.overdueActive,
+            inProgressCount: t.inProgress, lateCount: tLateCount,
             efficiencyRate: Math.round(tEfficiency * 10) / 10,
             logs: t.logs // 🚀 ส่งข้อมูลใบงานของช่างออกไปให้ Frontend
           };

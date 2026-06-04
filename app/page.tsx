@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import ImportButton from "../components/ImportButton";
+import DashboardSearchBar from "../components/DashboardSearchBar";
+import DashboardSearchResultsView from "../components/DashboardSearchResults";
 import toast from "react-hot-toast";
 import { searchVehicleByPlate, getDashboardStats } from "./actions";
 
@@ -25,6 +27,18 @@ interface VehicleRecord {
   model?: string;
   maintenanceHistory: any[];
 }
+
+interface DashboardSearchResults {
+  query: string;
+  workshops: any[];
+  technicians: any[];
+  logs: any[];
+  total: number;
+}
+
+const matchesSearchText = (query: string, ...values: any[]) => {
+  return values.some((value) => String(value ?? "").toLowerCase().includes(query));
+};
 
 const STATUS_CONFIG: Record<string, { text: string, color: string }> = {
   reported: { text: "แจ้งแล้ว", color: "bg-blue-50 text-blue-600 border-blue-200" },
@@ -182,6 +196,7 @@ export default function Home() {
   const [vehicleData, setVehicleData] = useState<VehicleRecord | null | undefined>(undefined);
   const [stats, setStats] = useState<any>(null);
   const [searchInput, setSearchInput] = useState("");
+  const [dashboardSearchResults, setDashboardSearchResults] = useState<DashboardSearchResults | null | undefined>(undefined);
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops' | 'technicians'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -216,21 +231,106 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setSelectedWorkshopDetail(null);
-    setSelectedTechnicianDetail(null);
     setGlobalStatusFilter("all");
     setGlobalPriorityFilter("all");
     setSortField("");
   }, [activeTab]);
 
+  const resetSearchView = () => {
+    setSearchInput("");
+    setVehicleData(undefined);
+    setDashboardSearchResults(undefined);
+  };
+
+  const handleTabChange = (tab: 'dashboard' | 'workshops' | 'technicians') => {
+    setActiveTab(tab);
+    setVehicleData(undefined);
+    setDashboardSearchResults(undefined);
+    setSelectedWorkshopDetail(null);
+    setSelectedTechnicianDetail(null);
+  };
+
+  const openWorkshopDetail = (workshop: any) => {
+    setVehicleData(undefined);
+    setDashboardSearchResults(undefined);
+    setSelectedTechnicianDetail(null);
+    setSelectedWorkshopDetail(workshop);
+    setCurrentWorkshopLogPage(1);
+    setActiveTab('workshops');
+  };
+
+  const openTechnicianDetail = (technician: any) => {
+    setVehicleData(undefined);
+    setDashboardSearchResults(undefined);
+    setSelectedWorkshopDetail(null);
+    setSelectedTechnicianDetail(technician);
+    setCurrentTechLogPage(1);
+    setActiveTab('technicians');
+  };
+
   const executeSearch = async () => {
-    if (!searchInput.trim()) {
+    const query = searchInput.trim();
+    if (!query) {
       setVehicleData(undefined);
+      setDashboardSearchResults(undefined);
       return;
     }
-    const searchToast = toast.loading(`กำลังค้นหา ${searchInput}...`);
+    const searchToast = toast.loading(`กำลังค้นหา ${query}...`);
     setVehicleData(undefined); 
-    const foundData = await searchVehicleByPlate(searchInput.trim());
+    setDashboardSearchResults(undefined);
+    const normalizedQuery = query.toLowerCase();
+
+    const workshops = (stats?.workshopsData || []).filter((workshop: any) =>
+      matchesSearchText(normalizedQuery, workshop.name)
+    );
+
+    const techniciansMap = new Map();
+    (stats?.workshopsData || []).forEach((workshop: any) => {
+      workshop.technicians?.forEach((technician: any) => {
+        if (!techniciansMap.has(technician.name)) {
+          techniciansMap.set(technician.name, { ...technician, logs: technician.logs ? [...technician.logs] : [] });
+        } else {
+          const existing = techniciansMap.get(technician.name);
+          existing.totalJobs += technician.totalJobs;
+          existing.successCount += technician.successCount;
+          existing.inProgressCount += technician.inProgressCount;
+          existing.lateCount += technician.lateCount;
+          const totalSlaJobs = existing.successCount + existing.lateCount;
+          existing.efficiencyRate = totalSlaJobs > 0 ? Math.round((existing.successCount / totalSlaJobs) * 1000) / 10 : 0;
+          existing.logs = [...(existing.logs || []), ...(technician.logs || [])];
+        }
+      });
+    });
+
+    const technicians = Array.from(techniciansMap.values()).filter((technician: any) =>
+      matchesSearchText(normalizedQuery, technician.name)
+    );
+
+    const logsMap = new Map();
+    (stats?.workshopsData || []).forEach((workshop: any) => {
+      workshop.logs?.forEach((log: any) => {
+        const key = log.maintenanceLogId || `${log.vehiclePlate}-${log.reportedAt}-${log.description}`;
+        if (!logsMap.has(key)) {
+          logsMap.set(key, { ...log, workshopName: log.workshopName || workshop.name });
+        }
+      });
+    });
+
+    const logs = Array.from(logsMap.values()).filter((log: any) =>
+      matchesSearchText(
+        normalizedQuery,
+        log.maintenanceLogId,
+        `#${log.maintenanceLogId}`,
+        `ใบแจ้งซ่อม ${log.maintenanceLogId}`,
+        `ใบงาน ${log.maintenanceLogId}`,
+        log.vehiclePlate,
+        log.description,
+        log.technicianName,
+        log.workshopName
+      )
+    );
+
+    const foundData = await searchVehicleByPlate(query);
 
     if (foundData) {
       toast.success(`พบประวัติรถ ${foundData.plate}`, { id: searchToast });
@@ -241,9 +341,13 @@ export default function Home() {
         model: foundData.model || undefined,
         maintenanceHistory: foundData.logs
       });
+    } else if (workshops.length > 0 || technicians.length > 0 || logs.length > 0) {
+      const total = workshops.length + technicians.length + logs.length;
+      toast.success(`พบผลลัพธ์ ${total} รายการ`, { id: searchToast });
+      setDashboardSearchResults({ query, workshops, technicians, logs, total });
     } else {
-      toast.error(`ไม่พบข้อมูล ${searchInput}`, { id: searchToast });
-      setVehicleData(null);
+      toast.error(`ไม่พบข้อมูล ${query}`, { id: searchToast });
+      setDashboardSearchResults(null);
     }
   };
 
@@ -325,6 +429,23 @@ export default function Home() {
     // ==========================================
     // หน้าค้นหาประวัติรายคัน
     // ==========================================
+    if (dashboardSearchResults !== undefined) {
+      return (
+        <DashboardSearchResultsView
+          results={dashboardSearchResults}
+          searchInput={searchInput}
+          itemsLimit={DASHBOARD_ITEMS_PER_PAGE}
+          onReset={resetSearchView}
+          onOpenWorkshop={openWorkshopDetail}
+          onOpenTechnician={openTechnicianDetail}
+          onOpenLog={setActiveLogModal}
+          renderPriorityBadge={getPriorityBadge}
+          renderStatusBadge={getStatusBadge}
+          renderDateTime={formatDateTime}
+        />
+      );
+    }
+
     if (vehicleData !== undefined) {
       if (vehicleData === null) {
         return (
@@ -393,11 +514,7 @@ export default function Home() {
       return (
         <div className="flex flex-col gap-4 sm:gap-6">
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex w-full sm:max-w-md relative">
-              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              <input type="text" placeholder="ค้นหาทะเบียนรถ (ตัวอย่าง: 34-3276)" className="w-full pl-10 pr-24 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder-gray-600 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0B603A]" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && executeSearch()}/>
-              <button onClick={executeSearch} className="absolute right-1.5 top-1.5 bg-[#0B603A] hover:bg-[#08482b] text-white px-4 py-1 rounded-md text-xs font-bold transition-colors">ค้นหา</button>
-            </div>
+            <DashboardSearchBar value={searchInput} onChange={setSearchInput} onSearch={executeSearch} />
             <div className="w-full sm:w-auto flex-shrink-0"><ImportButton /></div>
           </div>
 
@@ -910,7 +1027,7 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden relative">
         <div className={`absolute sm:relative flex-shrink-0 h-full transition-all duration-300 ease-in-out bg-white z-10 shadow-lg sm:shadow-none ${isSidebarOpen ? "w-64 opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-full"}`}>
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
         <main className="flex-1 overflow-y-auto p-2 sm:p-6 w-full">
           <div className="mx-auto max-w-[1400px]">
