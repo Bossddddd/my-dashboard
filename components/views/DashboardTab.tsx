@@ -1,10 +1,11 @@
+import { useLanguage } from '../../app/LanguageContext';
 import React from 'react';
 import DashboardSearchBar from "../DashboardSearchBar";
 import ImportButton from "../ImportButton";
-import { getStatusBadge, getPriorityBadge } from "../badges";
+import { StatusBadge, PriorityBadge } from "../badges";
 import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
-import { renderPagination } from "../Pagination";
+import Pagination from '../Pagination';
 
 export default function DashboardTab({
   stats,
@@ -21,6 +22,7 @@ export default function DashboardTab({
   setCurrentPage,
   DASHBOARD_ITEMS_PER_PAGE
 }: any) {
+  const { t } = useLanguage();
   const maxCount = Math.max(...(stats.monthlyStats?.map((m: any) => m.count) || [0]), 1);
   const maxCost = Math.max(...(stats.monthlyStats?.map((m: any) => m.cost) || [0]), 1);
   
@@ -43,25 +45,25 @@ export default function DashboardTab({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-[#0B603A]">
-          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">รถยนต์ในระบบทั้งหมด</div>
-          <div className="text-2xl sm:text-3xl font-black text-[#0B603A]">{stats.totalVehicles} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">คัน</span></div>
+          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">{t('totalVehicles')}</div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B603A]">{stats.totalVehicles} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">{t('vehiclesUnit')}</span></div>
         </div>
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-amber-500">
-          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">ใบแจ้งซ่อมทั้งหมด</div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-600">{stats.totalLogs} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">รายการ</span></div>
+          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">{t('totalLogs')}</div>
+          <div className="text-2xl sm:text-3xl font-black text-amber-600">{stats.totalLogs} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">{t('logsUnit')}</span></div>
         </div>
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-emerald-600">
-          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">ยอดค่าซ่อมรวมสุทธิ</div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">บาท</span></div>
+          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">{t('totalCost')}</div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-600">{stats.totalCost.toLocaleString('th-TH')} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">{t('currency')}</span></div>
         </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-        <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">⚡ ประสิทธิภาพการดำเนินงานและความเร็วในการบริการ (KPI Metrics)</h3>
+        <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">{t('kpiTitle')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col justify-between">
             <div>
-              <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">ซ่อมเสร็จตามกำหนด (SLA)</span>
+              <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">{t('onTimeRate')}</span>
               <span className="text-2xl font-bold text-emerald-600 font-mono">{stats.efficiency.onTimeRate}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
@@ -69,20 +71,20 @@ export default function DashboardTab({
             </div>
           </div>
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-            <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">เวลาเฉลี่ยในการจ่ายงานให้ช่าง</span>
+            <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">{t('avgResponseTime')}</span>
             <span className="text-2xl font-bold text-blue-600 font-mono">{stats.efficiency.avgResponseHours}</span>
-            <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">ชั่วโมง / งาน</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">{t('hoursPerJob')}</span>
           </div>
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-            <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">เวลาเฉลี่ยที่ใช้ในการซ่อมจริง</span>
+            <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">{t('avgRepairTime')}</span>
             <span className="text-2xl font-bold text-purple-600 font-mono">{stats.efficiency.avgRepairHours}</span>
-            <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">ชั่วโมง / งาน</span>
+            <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">{t('hoursPerJob')}</span>
           </div>
           <div className={`p-4 rounded-lg border flex flex-col justify-between ${stats.efficiency.overdueActiveCount > 0 ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800/50' : 'bg-slate-50 border-slate-100'}`}>
             <div>
-              <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">งานคงค้างที่เลยกำหนดส่ง</span>
+              <span className="text-gray-500 dark:text-slate-400 block mb-1 text-xs font-bold">{t('overdueTasksActive')}</span>
               <span className={`text-2xl font-bold font-mono ${stats.efficiency.overdueActiveCount > 0 ? 'text-rose-600' : 'text-gray-700 dark:text-slate-300'}`}>{stats.efficiency.overdueActiveCount}</span>
-              <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">รายการ</span>
+              <span className="text-xs text-gray-400 dark:text-slate-500 ml-1">{t('logsUnit')}</span>
             </div>
             {stats.efficiency.overdueActiveCount > 0 && <span className="text-[10px] font-bold text-rose-500 animate-pulse mt-1">⚠️ เร่งติดตามงานด่วน</span>}
           </div>
@@ -124,23 +126,23 @@ export default function DashboardTab({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-4 border-b pb-2">สรุปตามสถานะงานซ่อม (Status)</h3>
+          <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-4 border-b pb-2">{t('statusSummaryTitle')}</h3>
           <div className="flex flex-col gap-2">
             {stats.statusCounts?.map((item: any) => (
               <div key={item.status} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 dark:bg-slate-900 transition-colors">
-                {getStatusBadge(item.status)}
-                <span className="font-bold text-gray-800 dark:text-slate-200">{item.count} <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1">รายการ</span></span>
+                <StatusBadge status={item.status} />
+                <span className="font-bold text-gray-800 dark:text-slate-200">{item.count} <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1">{t('logsUnit')}</span></span>
               </div>
             ))}
           </div>
         </div>
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-4 border-b pb-2">สรุปตามความเร่งด่วน (Priority)</h3>
+          <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-4 border-b pb-2">{t('prioritySummaryTitle')}</h3>
           <div className="flex flex-col gap-2">
             {stats.priorityCounts?.map((item: any) => (
               <div key={item.priority} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 dark:bg-slate-900 transition-colors">
-                {getPriorityBadge(item.priority)}
-                <span className="font-bold text-gray-800 dark:text-slate-200">{item.count} <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1">รายการ</span></span>
+                <PriorityBadge priority={item.priority} />
+                <span className="font-bold text-gray-800 dark:text-slate-200">{item.count} <span className="text-xs font-normal text-gray-500 dark:text-slate-400 ml-1">{t('logsUnit')}</span></span>
               </div>
             ))}
           </div>
@@ -172,7 +174,7 @@ export default function DashboardTab({
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{task.plate || "-"}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{task.description}</div></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-blue-600 font-bold align-top whitespace-nowrap">{task.technicianName || "-"}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap">{getStatusBadge(task.status)}</td>
+                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={task.status} /></td>
                     <td className="p-2 sm:px-4 sm:py-3 font-bold text-rose-600 align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(task.dueDate)}</td>
                   </tr>
                 ))}
@@ -182,7 +184,7 @@ export default function DashboardTab({
               </tbody>
             </table>
           </div>
-          {renderPagination(currentPage, totalPages, setCurrentPage, totalOverdueItems, startIndex, DASHBOARD_ITEMS_PER_PAGE)}
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={totalOverdueItems} startIndex={startIndex} itemsPerPage={DASHBOARD_ITEMS_PER_PAGE} />
         </div>
       )}
     </div>

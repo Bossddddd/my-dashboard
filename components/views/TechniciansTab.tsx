@@ -1,9 +1,10 @@
+import { useLanguage } from '../../app/LanguageContext';
 import React from 'react';
 import PurePieChart from "../PurePieChart";
-import { getStatusBadge, getPriorityBadge } from "../badges";
+import { StatusBadge, PriorityBadge } from "../badges";
 import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
-import { renderPagination } from "../Pagination";
+import Pagination from '../Pagination';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../../lib/constants";
 
 export default function TechniciansTab({
@@ -27,6 +28,7 @@ export default function TechniciansTab({
   setCurrentTechPage,
   slaTarget
 }: any) {
+  const { t } = useLanguage();
   if (selectedTechnicianDetail) {
     const t = selectedTechnicianDetail;
     
@@ -65,11 +67,11 @@ export default function TechniciansTab({
             <h3 className="font-bold text-sm sm:text-base text-gray-800 dark:text-slate-200">📋 รายการประวัติใบงานทั้งหมดภายใต้ความรับผิดชอบ ({totalTechLogs} รายการ)</h3>
             <div className="flex gap-2">
               <select value={globalStatusFilter} onChange={(e) => setMakeFilterValue('status', e.target.value)} className="text-xs bg-white dark:bg-slate-800 border p-1.5 rounded font-bold text-gray-600 dark:text-slate-400">
-                <option value="all">ทุกสถานะ</option>
+                <option value="all">{t('allStatus')}</option>
                 {Object.keys(STATUS_CONFIG).map(k => <option key={k} value={k}>{STATUS_CONFIG[k].text}</option>)}
               </select>
               <select value={globalPriorityFilter} onChange={(e) => setMakeFilterValue('priority', e.target.value)} className="text-xs bg-white dark:bg-slate-800 border p-1.5 rounded font-bold text-gray-600 dark:text-slate-400">
-                <option value="all">ทุกความเร่งด่วน</option>
+                <option value="all">{t('allPriority')}</option>
                 {Object.keys(PRIORITY_CONFIG).map(k => <option key={k} value={k}>{PRIORITY_CONFIG[k].text}</option>)}
               </select>
             </div>
@@ -79,7 +81,7 @@ export default function TechniciansTab({
               <thead className="bg-gray-50 dark:bg-slate-900 text-gray-600 dark:text-slate-400 text-[10px] sm:text-xs uppercase border-b border-gray-200 dark:border-slate-700">
                 <tr>
                   <th onClick={() => handleSort("vehiclePlate")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ทะเบียนรถ {sortField === "vehiclePlate" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
-                  <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
+                  <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">{t('descCol')}</th>
                   <th onClick={() => handleSort("workshopName")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">อู่/ศูนย์บริการ {sortField === "workshopName" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("priority")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ความเร่งด่วน {sortField === "priority" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("status")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">สถานะ {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
@@ -92,15 +94,15 @@ export default function TechniciansTab({
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{log.vehiclePlate}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-800 dark:text-slate-200 font-bold align-top whitespace-nowrap">{log.workshopName}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap">{getStatusBadge(log.status)}</td>
+                    <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap"><PriorityBadge priority={log.priority} /></td>
+                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={log.status} /></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {renderPagination(currentTechLogPage, logTotalPages, setCurrentTechLogPage, totalTechLogs, logStartIndex, GENERAL_ITEMS_PER_PAGE)}
+          <Pagination currentPage={currentTechLogPage} totalPages={logTotalPages} onPageChange={setCurrentTechLogPage} totalItems={totalTechLogs} startIndex={logStartIndex} itemsPerPage={GENERAL_ITEMS_PER_PAGE} />
         </div>
       </div>
     );
@@ -114,7 +116,7 @@ export default function TechniciansTab({
     <div className="flex flex-col gap-4 sm:gap-6">
       <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex flex-col gap-1 sm:gap-2 w-full sm:w-80 shrink-0">
-          <label className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400">กรุณาเลือกอู่/ศูนย์ซ่อมเพื่อตรวจสอบรายชื่อช่าง:</label>
+          <label className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400">{t('selectWorkshopLabel')}</label>
           <select value={selectedWorkshop} onChange={(e) => { setSelectedWorkshop(e.target.value); setCurrentTechPage(1); }} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-300 dark:border-slate-600 rounded-lg py-2.5 px-3 text-sm sm:text-base font-bold text-[#0B603A]">
             <option value="all">🌐 แสดงช่างทั้งหมดทุกอู่รวมกัน</option>
             {stats.workshopsData?.map((w: any, i: number) => <option key={i} value={w.name}>{w.name}</option>)}
@@ -124,7 +126,7 @@ export default function TechniciansTab({
           <span className="text-3xl sm:text-4xl shrink-0">👨‍💻</span>
           <div className="text-left">
             <span className="text-[11px] sm:text-sm text-gray-600 dark:text-slate-400 font-bold block mb-0.5">{selectedWorkshop === "all" ? "ช่างทั้งหมด" : "ช่างประจำอู่นี้"}</span>
-            <span className="text-2xl sm:text-3xl font-black text-[#0B603A] font-mono leading-none">{techsData.total} <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400">คน</span></span>
+            <span className="text-2xl sm:text-3xl font-black text-[#0B603A] font-mono leading-none">{techsData.total} <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400">{t('techCountUnit')}</span></span>
           </div>
         </div>
       </div>
@@ -170,7 +172,7 @@ export default function TechniciansTab({
           <table className="w-full text-left table-auto text-[11px] sm:text-sm min-w-[900px]">
             <thead className="text-gray-600 dark:text-slate-400 bg-gray-100 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-700 text-[10px] sm:text-xs uppercase">
               <tr>
-                <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">ลำดับ</th>
+                <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">{t('orderCol')}</th>
                 <th onClick={() => handleSort("name")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">ชื่อช่าง {sortField === "name" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                 <th onClick={() => handleSort("totalJobs")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">ทั้งหมด {sortField === "totalJobs" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                 <th onClick={() => handleSort("successCount")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">สำเร็จ {sortField === "successCount" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
@@ -198,7 +200,7 @@ export default function TechniciansTab({
             </tbody>
           </table>
         </div>
-        {renderPagination(currentTechPage, totalTechPages, setCurrentTechPage, techsData.total, startIndex, GENERAL_ITEMS_PER_PAGE)}
+        <Pagination currentPage={currentTechPage} totalPages={totalTechPages} onPageChange={setCurrentTechPage} totalItems={techsData.total} startIndex={startIndex} itemsPerPage={GENERAL_ITEMS_PER_PAGE} />
       </div>
     </div>
   );

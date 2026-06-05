@@ -14,8 +14,10 @@ import TechniciansTab from "../components/views/TechniciansTab";
 import VehicleDetailView from "../components/views/VehicleDetailView";
 import SettingsTab from "../components/views/SettingsTab";
 import DashboardSearchResultsView from "../components/DashboardSearchResults";
-import { getStatusBadge, getPriorityBadge } from "../components/badges";
+import { StatusBadge, PriorityBadge } from "../components/badges";
 import { formatDateTime } from "../components/formatters";
+import { LanguageProvider } from "./LanguageContext";
+import { getTranslation } from "@/lib/i18n";
 
 export default function Home() {
   const [vehicleData, setVehicleData] = useState<VehicleRecord | null | undefined>(undefined);
@@ -59,7 +61,6 @@ export default function Home() {
   const [customDateStart, setCustomDateStart] = useState('');
   const [customDateEnd, setCustomDateEnd] = useState('');
   const [slaTarget, setSlaTarget] = useState('80');
-  const [lineToken, setLineToken] = useState('');
 
   // Load from LocalStorage
   useEffect(() => {
@@ -69,7 +70,6 @@ export default function Home() {
     const savedCustomStart = localStorage.getItem('customDateStart') || '';
     const savedCustomEnd = localStorage.getItem('customDateEnd') || '';
     const savedSla = localStorage.getItem('slaTarget') || '80';
-    const savedToken = localStorage.getItem('lineToken') || '';
 
     setIsDarkMode(savedDarkMode);
     setLanguage(savedLang);
@@ -77,7 +77,6 @@ export default function Home() {
     setCustomDateStart(savedCustomStart);
     setCustomDateEnd(savedCustomEnd);
     setSlaTarget(savedSla);
-    setLineToken(savedToken);
   }, []);
 
   // Save to LocalStorage and apply dark mode
@@ -88,14 +87,13 @@ export default function Home() {
     localStorage.setItem('customDateStart', customDateStart);
     localStorage.setItem('customDateEnd', customDateEnd);
     localStorage.setItem('slaTarget', slaTarget);
-    localStorage.setItem('lineToken', lineToken);
     
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [isDarkMode, language, dateRange, customDateStart, customDateEnd, slaTarget, lineToken]);
+  }, [isDarkMode, language, dateRange, customDateStart, customDateEnd, slaTarget]);
 
   const loadStats = async () => {
     const data = await getDashboardStats({ dateRange, customStart: customDateStart, customEnd: customDateEnd });
@@ -278,8 +276,8 @@ export default function Home() {
           onOpenWorkshop={openWorkshopDetail}
           onOpenTechnician={openTechnicianDetail}
           onOpenLog={setActiveLogModal}
-          renderPriorityBadge={getPriorityBadge}
-          renderStatusBadge={getStatusBadge}
+          renderPriorityBadge={(p: string) => <PriorityBadge priority={p} />}
+          renderStatusBadge={(s: string) => <StatusBadge status={s} />}
           renderDateTime={formatDateTime}
         />
       );
@@ -308,8 +306,8 @@ export default function Home() {
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           handleLogClick={setActiveLogModal}
-          getStatusBadge={getStatusBadge}
-          getPriorityBadge={getPriorityBadge}
+          StatusBadge={StatusBadge}
+          PriorityBadge={PriorityBadge}
           formatDateTime={formatDateTime}
           slaTarget={parseInt(slaTarget)}
         />
@@ -349,8 +347,8 @@ export default function Home() {
           sortDirection={sortDirection}
           handleSort={handleSort}
           handleLogClick={setActiveLogModal}
-          getStatusBadge={getStatusBadge}
-          getPriorityBadge={getPriorityBadge}
+          StatusBadge={StatusBadge}
+          PriorityBadge={PriorityBadge}
           formatDateTime={formatDateTime}
           GENERAL_ITEMS_PER_PAGE={GENERAL_ITEMS_PER_PAGE}
           currentTechLogPage={currentTechLogPage}
@@ -371,7 +369,7 @@ export default function Home() {
           customDateStart={customDateStart} setCustomDateStart={setCustomDateStart}
           customDateEnd={customDateEnd} setCustomDateEnd={setCustomDateEnd}
           slaTarget={slaTarget} setSlaTarget={setSlaTarget}
-          lineToken={lineToken} setLineToken={setLineToken}
+          
           loadStats={loadStats}
         />
       );
@@ -379,42 +377,44 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-900 font-sans overflow-hidden">
-      <header className="h-14 sm:h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-3 sm:px-6 flex-shrink-0 z-20 shadow-sm">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:text-slate-200 p-1.5 rounded-lg hover:bg-gray-100 dark:bg-slate-800/50">
-            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
-          </button>
-          <div className="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2">
-            <div className="bg-[#0B603A] text-white font-black italic rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm tracking-widest border border-green-200 shadow-xs shrink-0">EVT</div>
-            <span className="font-black text-gray-800 dark:text-slate-200 text-[11px] sm:text-sm hidden sm:block tracking-wide whitespace-nowrap">EVT Admin Panel</span>
-          </div>
-          <div className="h-5 sm:h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
-          <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
-            {vehicleData !== undefined ? "ประวัติรถ" : selectedWorkshopDetail ? `อู่: ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `ช่าง: ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? "Dashboard ซ่อมบำรุง" : activeTab === 'workshops' ? "อู่ซ่อม" : activeTab === 'technicians' ? "ทีมช่าง" : "ตั้งค่าระบบ"}
-          </h1>
-        </div>
-      </header>
+    <LanguageProvider language={language} setLanguage={setLanguage}>
+      <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-900 font-sans overflow-hidden">
+          <header className="h-14 sm:h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-3 sm:px-6 flex-shrink-0 z-20 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:text-slate-200 p-1.5 rounded-lg hover:bg-gray-100 dark:bg-slate-800/50">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </button>
+              <div className="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2">
+                <div className="bg-[#0B603A] text-white font-black italic rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm tracking-widest border border-green-200 shadow-xs shrink-0">EVT</div>
+                <span className="font-black text-gray-800 dark:text-slate-200 text-[11px] sm:text-sm hidden sm:block tracking-wide whitespace-nowrap">{getTranslation(language, 'evtAdminPanel')}</span>
+              </div>
+              <div className="h-5 sm:h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
+              <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
+                {vehicleData !== undefined ? getTranslation(language, 'historyLog') : selectedWorkshopDetail ? `${getTranslation(language, 'workshopTitle')} ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `${getTranslation(language, 'technicianTitle')} ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? getTranslation(language, 'maintenanceDashboard') : activeTab === 'workshops' ? getTranslation(language, 'workshops') : activeTab === 'technicians' ? getTranslation(language, 'technicians') : getTranslation(language, 'settings')}
+              </h1>
+            </div>
+          </header>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Mobile Overlay */}
-        {isSidebarOpen && (
-          <div 
-            className="absolute inset-0 bg-black/50 z-20 sm:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
-        <div className={`absolute sm:relative flex-shrink-0 h-full transition-all duration-300 ease-in-out bg-white dark:bg-slate-800 z-30 sm:z-10 shadow-2xl sm:shadow-none ${isSidebarOpen ? "w-64 opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-full"}`}>
-          <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-        </div>
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 w-full relative z-10">
-          <div className="mx-auto max-w-[1400px]">
-            {renderContent()}
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+              <div 
+                className="absolute inset-0 bg-black/50 z-20 sm:hidden"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+            )}
+            <div className={`absolute sm:relative flex-shrink-0 h-full transition-all duration-300 ease-in-out bg-white dark:bg-slate-800 z-30 sm:z-10 shadow-2xl sm:shadow-none ${isSidebarOpen ? "w-64 opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-full"}`}>
+              <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+            </div>
+            <main className="flex-1 overflow-y-auto p-3 sm:p-6 w-full relative z-10">
+              <div className="mx-auto max-w-[1400px]">
+                {renderContent()}
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
 
-      <LogDetailModal activeLogModal={activeLogModal} onClose={() => setActiveLogModal(null)} />
-    </div>
+          <LogDetailModal activeLogModal={activeLogModal} onClose={() => setActiveLogModal(null)} />
+        </div>
+      </LanguageProvider>
   );
 }

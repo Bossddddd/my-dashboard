@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { deleteDataByYear, resetDatabase } from '../../app/actions';
+import { useLanguage } from '../../app/LanguageContext';
 
 export default function SettingsTab({
   isDarkMode, setIsDarkMode,
@@ -9,9 +10,9 @@ export default function SettingsTab({
   customDateStart, setCustomDateStart,
   customDateEnd, setCustomDateEnd,
   slaTarget, setSlaTarget,
-  lineToken, setLineToken,
   loadStats
 }: any) {
+  const { t } = useLanguage();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteType, setDeleteType] = useState<'old' | 'all' | null>(null);
   
@@ -62,29 +63,25 @@ export default function SettingsTab({
         <div className="mb-8 border-b border-gray-100 dark:border-slate-700/50 pb-4 flex justify-between items-end">
           <div>
             <h2 className="text-2xl font-black text-gray-900 dark:text-slate-100 flex items-center gap-3">
-              <span className="text-3xl">⚙️</span> ตั้งค่าระบบซ่อมบำรุง
-            </h2>
-            <p className="text-gray-500 dark:text-slate-400 font-medium text-sm mt-2">จัดการการแสดงผล ข้อมูล และการตั้งค่าขั้นสูงของแดชบอร์ด</p>
+              <span className="text-3xl">⚙️</span>{t('settingsTitle')}</h2>
+            <p className="text-gray-500 dark:text-slate-400 font-medium text-sm mt-2">{t('settingsDesc')}</p>
           </div>
           <button 
             onClick={handleSaveSettings}
             className="bg-[#0B603A] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-emerald-800 transition-colors hidden sm:block"
-          >
-            บันทึกการเปลี่ยนแปลง
-          </button>
+          >{t('saveChanges')}</button>
         </div>
 
         <div className="space-y-10">
           {/* Section 1: Appearance */}
           <section>
             <h3 className="text-lg font-black text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <span className="text-emerald-600">🎨</span> การแสดงผล (Appearance)
-            </h3>
+              <span className="text-emerald-600">🎨</span>{t('appearance')}</h3>
             <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700/50 p-5 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">โหมดกลางคืน (Dark Mode)</h4>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">เปลี่ยนธีมหน้าจอเป็นสีเข้มเพื่อถนอมสายตา</p>
+                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">{t('darkMode')}</h4>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">{t('darkModeDesc')}</p>
                 </div>
                 <button 
                   onClick={() => setIsDarkMode(!isDarkMode)}
@@ -96,8 +93,8 @@ export default function SettingsTab({
               <hr className="border-gray-200 dark:border-slate-700" />
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">ภาษาของระบบ (Language)</h4>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">เลือกภาษาที่ใช้ในแดชบอร์ดซ่อมบำรุง</p>
+                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">{t('language')}</h4>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">{t('languageDesc')}</p>
                 </div>
                 <select 
                   value={language}
@@ -114,33 +111,32 @@ export default function SettingsTab({
           {/* Section 2: Data & Analytics */}
           <section>
             <h3 className="text-lg font-black text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <span className="text-blue-500">📊</span> ข้อมูลและการวิเคราะห์ (Data & Analytics)
-            </h3>
+              <span className="text-blue-500">📊</span>{t('dataAnalytics')}</h3>
             <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700/50 p-5 space-y-5">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">ช่วงเวลาเริ่มต้น (Default Date Range)</h4>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">กำหนดช่วงเวลาดึงข้อมูลค่าเริ่มต้นเมื่อเปิดหน้าแดชบอร์ด</p>
+                    <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">{t('defaultDateRange')}</h4>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">{t('defaultDateRangeDesc')}</p>
                   </div>
                   <select 
                     value={dateRange}
                     onChange={(e) => setDateRange(e.target.value)}
                     className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 text-sm font-bold rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 outline-none shadow-sm min-w-[150px]"
                   >
-                    <option value="7d">7 วันล่าสุด</option>
-                    <option value="30d">30 วันล่าสุด</option>
-                    <option value="6m">6 เดือนล่าสุด</option>
-                    <option value="1y">1 ปีล่าสุด</option>
-                    <option value="all">ข้อมูลทั้งหมด (All Time)</option>
-                    <option value="custom">กำหนดช่วงเวลาเอง (Custom)</option>
+                    <option value="7d">{t('date7d')}</option>
+                    <option value="30d">{t('date30d')}</option>
+                    <option value="6m">{t('date6m')}</option>
+                    <option value="1y">{t('date1y')}</option>
+                    <option value="all">{t('dateAll')}</option>
+                    <option value="custom">{t('dateCustom')}</option>
                   </select>
                 </div>
 
                 {dateRange === 'custom' && (
                   <div className="flex flex-col sm:flex-row gap-4 items-center justify-end bg-blue-50 dark:bg-blue-900/30/50 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 animate-fade-in">
                     <div className="flex items-center gap-3">
-                      <label className="text-xs font-bold text-gray-600 dark:text-slate-400">ตั้งแต่วันที่:</label>
+                      <label className="text-xs font-bold text-gray-600 dark:text-slate-400">{t('dateFrom')}</label>
                       <input 
                         type="date" 
                         value={customDateStart} 
@@ -149,7 +145,7 @@ export default function SettingsTab({
                       />
                     </div>
                     <div className="flex items-center gap-3">
-                      <label className="text-xs font-bold text-gray-600 dark:text-slate-400">ถึงวันที่:</label>
+                      <label className="text-xs font-bold text-gray-600 dark:text-slate-400">{t('dateTo')}</label>
                       <input 
                         type="date" 
                         value={customDateEnd} 
@@ -164,8 +160,8 @@ export default function SettingsTab({
               <hr className="border-gray-200 dark:border-slate-700" />
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">เป้าหมาย SLA การซ่อมบำรุง (%)</h4>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">ใช้เกณฑ์นี้ประเมินอู่และทีมช่างว่ามีประสิทธิภาพในระดับดีเยี่ยม</p>
+                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">{t('slaTarget')}</h4>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">{t('slaTargetDesc')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input 
@@ -181,38 +177,16 @@ export default function SettingsTab({
             </div>
           </section>
 
-          {/* Section 3: Integrations & Alerts */}
-          <section>
-            <h3 className="text-lg font-black text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <span className="text-amber-500">🔔</span> การแจ้งเตือน (Notifications)
-            </h3>
-            <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-700/50 p-5">
-              <div className="flex flex-col gap-3">
-                <div>
-                  <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm">LINE Notify Token</h4>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-1">โทเคนสำหรับการส่งแจ้งเตือนใบงานล่าช้าผ่านทาง LINE</p>
-                </div>
-                <input 
-                  type="password" 
-                  value={lineToken}
-                  onChange={(e) => setLineToken(e.target.value)}
-                  placeholder="กรอก LINE Token (เช่น abcdefg1234567)"
-                  className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-900 dark:text-slate-100 text-sm font-mono rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full max-w-md p-2.5 outline-none shadow-sm"
-                />
-              </div>
-            </div>
-          </section>
 
           {/* Section 4: Danger Zone */}
           <section>
             <h3 className="text-lg font-black text-rose-600 mb-4 flex items-center gap-2">
-              <span className="text-rose-600">⚠️</span> จัดการฐานข้อมูล (Danger Zone)
-            </h3>
+              <span className="text-rose-600">⚠️</span>{t('dangerZone')}</h3>
             <div className="bg-rose-50 dark:bg-rose-900/30 rounded-xl border border-rose-200 dark:border-rose-800 p-5 space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex-1">
-                  <h4 className="font-bold text-rose-900 dark:text-rose-300 text-sm">ลบข้อมูลแบบระบุปี</h4>
-                  <p className="text-xs text-rose-700 dark:text-rose-400/80 font-medium mt-1">เลือกลบประวัติการซ่อมบำรุงเฉพาะปีที่ไม่ได้ใช้งานแล้ว เพื่อเพิ่มพื้นที่จัดเก็บ (ข้อมูลจะหายถาวร)</p>
+                  <h4 className="font-bold text-rose-900 dark:text-rose-300 text-sm">{t('deleteByYear')}</h4>
+                  <p className="text-xs text-rose-700 dark:text-rose-400/80 font-medium mt-1">{t('deleteByYearDesc')}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <select
@@ -221,29 +195,25 @@ export default function SettingsTab({
                     className="bg-white dark:bg-slate-800 text-rose-800 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs sm:text-sm font-bold rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 outline-none shadow-sm"
                   >
                     {availableYears.map(year => (
-                      <option key={year} value={year}>ข้อมูลปี {year}</option>
+                      <option key={year} value={year}>{t('yearDataPrefix')}  {year}</option>
                     ))}
                   </select>
                   <button 
                     onClick={() => handleTriggerDelete('old')}
                     className="bg-white dark:bg-slate-800 text-rose-600 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 px-3 py-2 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition-colors"
-                  >
-                    ลบข้อมูล
-                  </button>
+                  >{t('deleteButton')}</button>
                 </div>
               </div>
               <hr className="border-rose-200 dark:border-rose-800/50" />
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-rose-900 dark:text-rose-300 text-sm">รีเซ็ตฐานข้อมูลทั้งหมด</h4>
-                  <p className="text-xs text-rose-700 dark:text-rose-400/80 font-medium mt-1">ลบข้อมูลรถ, อู่, ช่าง, และใบงานทั้งหมดในระบบ (ข้อมูลจะหายถาวร)</p>
+                  <h4 className="font-bold text-rose-900 dark:text-rose-300 text-sm">{t('resetDatabase')}</h4>
+                  <p className="text-xs text-rose-700 dark:text-rose-400/80 font-medium mt-1">{t('resetDatabaseDesc')}</p>
                 </div>
                 <button 
                   onClick={() => handleTriggerDelete('all')}
                   className="bg-rose-600 text-white hover:bg-rose-700 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition-colors shrink-0"
-                >
-                  รีเซ็ตข้อมูลทั้งหมด
-                </button>
+                >{t('resetButton')}</button>
               </div>
             </div>
           </section>
@@ -254,9 +224,7 @@ export default function SettingsTab({
           <button 
             onClick={handleSaveSettings}
             className="w-full bg-[#0B603A] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-emerald-800 transition-colors"
-          >
-            บันทึกการเปลี่ยนแปลง
-          </button>
+          >{t('saveChanges')}</button>
         </div>
       </div>
 
@@ -267,24 +235,20 @@ export default function SettingsTab({
             <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
               ⚠️
             </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-slate-100 text-center mb-2">ยืนยันการทำรายการ</h3>
+            <h3 className="text-lg font-black text-gray-900 dark:text-slate-100 text-center mb-2">{t('confirmAction')}</h3>
             <p className="text-sm text-gray-500 dark:text-slate-400 text-center mb-6 font-medium leading-relaxed">
-              คุณแน่ใจหรือไม่ว่าต้องการ{deleteType === 'old' ? `ลบข้อมูลทั้งหมดของปี ${selectedYearToDelete}` : 'รีเซ็ตข้อมูลทั้งหมด'}? <br/>
-              <span className="text-rose-500 font-bold">การกระทำนี้ไม่สามารถกู้คืนได้</span>
+              {deleteType === 'old' ? `${t('confirmDeleteYear')} ${selectedYearToDelete}?` : t('confirmResetAll')} <br/>
+              <span className="text-rose-500 font-bold">{t('cannotUndo')}</span>
             </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800/50 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-colors"
-              >
-                ยกเลิก
-              </button>
+              >{t('cancel')}</button>
               <button 
                 onClick={confirmDelete}
                 className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
-              >
-                ยืนยันการลบ
-              </button>
+              >{t('confirmDelete')}</button>
             </div>
           </div>
         </div>

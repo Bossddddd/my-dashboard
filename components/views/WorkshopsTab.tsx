@@ -1,9 +1,10 @@
+import { useLanguage } from '../../app/LanguageContext';
 import React from 'react';
 import PurePieChart from "../PurePieChart";
-import { getStatusBadge, getPriorityBadge } from "../badges";
+import { StatusBadge, PriorityBadge } from "../badges";
 import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
-import { renderPagination } from "../Pagination";
+import Pagination from '../Pagination';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../../lib/constants";
 
 export default function WorkshopsTab({
@@ -24,6 +25,7 @@ export default function WorkshopsTab({
   processedWorkshops,
   slaTarget
 }: any) {
+  const { t } = useLanguage();
   if (selectedWorkshopDetail) {
     const w = selectedWorkshopDetail;
     
@@ -63,11 +65,11 @@ export default function WorkshopsTab({
             <h3 className="font-bold text-sm sm:text-base text-gray-800 dark:text-slate-200">📋 รายการประวัติใบงานซ่อมของอู่นี้ ({totalWorkshopLogs} รายการ)</h3>
             <div className="flex gap-2">
               <select value={globalStatusFilter} onChange={(e) => setMakeFilterValue('status', e.target.value)} className="text-xs bg-white dark:bg-slate-800 border p-1.5 rounded font-bold text-gray-600 dark:text-slate-400">
-                <option value="all">ทุกสถานะ</option>
+                <option value="all">{t('allStatus')}</option>
                 {Object.keys(STATUS_CONFIG).map(k => <option key={k} value={k}>{STATUS_CONFIG[k].text}</option>)}
               </select>
               <select value={globalPriorityFilter} onChange={(e) => setMakeFilterValue('priority', e.target.value)} className="text-xs bg-white dark:bg-slate-800 border p-1.5 rounded font-bold text-gray-600 dark:text-slate-400">
-                <option value="all">ทุกความเร่งด่วน</option>
+                <option value="all">{t('allPriority')}</option>
                 {Object.keys(PRIORITY_CONFIG).map(k => <option key={k} value={k}>{PRIORITY_CONFIG[k].text}</option>)}
               </select>
             </div>
@@ -77,7 +79,7 @@ export default function WorkshopsTab({
               <thead className="bg-gray-50 dark:bg-slate-900 text-gray-600 dark:text-slate-400 text-[10px] sm:text-xs uppercase border-b border-gray-200 dark:border-slate-700">
                 <tr>
                   <th onClick={() => handleSort("vehiclePlate")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ทะเบียน {sortField === "vehiclePlate" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
-                  <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
+                  <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">{t('descCol')}</th>
                   <th onClick={() => handleSort("technicianName")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ช่าง {sortField === "technicianName" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("priority")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">เร่งด่วน {sortField === "priority" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("status")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">สถานะ {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
@@ -90,15 +92,15 @@ export default function WorkshopsTab({
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{log.vehiclePlate}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-800 dark:text-slate-200 font-bold align-top whitespace-nowrap">{log.technicianName}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap">{getPriorityBadge(log.priority)}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap">{getStatusBadge(log.status)}</td>
+                    <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap"><PriorityBadge priority={log.priority} /></td>
+                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={log.status} /></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {renderPagination(currentWorkshopLogPage, logTotalPages, setCurrentWorkshopLogPage, totalWorkshopLogs, logStartIndex, GENERAL_ITEMS_PER_PAGE)}
+          <Pagination currentPage={currentWorkshopLogPage} totalPages={logTotalPages} onPageChange={setCurrentWorkshopLogPage} totalItems={totalWorkshopLogs} startIndex={logStartIndex} itemsPerPage={GENERAL_ITEMS_PER_PAGE} />
         </div>
       </div>
     );
@@ -112,24 +114,24 @@ export default function WorkshopsTab({
           <PurePieChart success={workshopSums.sumSuccess} inProgress={workshopSums.sumInProgress} late={workshopSums.sumLate} size="lg" />
         </div>
         <div className="flex flex-col gap-3 sm:gap-4 text-xs sm:text-sm font-bold bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 rounded-xl border border-gray-100 dark:border-slate-700/50 w-full md:w-auto min-w-[250px] lg:min-w-[350px]">
-          <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="flex items-center gap-2 text-gray-600 dark:text-slate-400"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> งานสำเร็จ</span><span className="text-emerald-600 text-xl font-black">{workshopSums.sumSuccess}</span></div>
-          <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="flex items-center gap-2 text-gray-600 dark:text-slate-400"><span className="w-3 h-3 rounded-full bg-amber-500"></span> กำลังซ่อม</span><span className="text-amber-500 text-xl font-black">{workshopSums.sumInProgress}</span></div>
-          <div className="flex justify-between items-center"><span className="flex items-center gap-2 text-gray-600 dark:text-slate-400"><span className="w-3 h-3 rounded-full bg-rose-500"></span> ล่าช้า</span><span className="text-rose-600 text-xl font-black">{workshopSums.sumLate}</span></div>
+          <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="flex items-center gap-2 text-gray-600 dark:text-slate-400"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>{t('successJobs')}</span><span className="text-emerald-600 text-xl font-black">{workshopSums.sumSuccess}</span></div>
+          <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="flex items-center gap-2 text-gray-600 dark:text-slate-400"><span className="w-3 h-3 rounded-full bg-amber-500"></span>{t('inProgressJobs')}</span><span className="text-amber-500 text-xl font-black">{workshopSums.sumInProgress}</span></div>
+          <div className="flex justify-between items-center"><span className="flex items-center gap-2 text-gray-600 dark:text-slate-400"><span className="w-3 h-3 rounded-full bg-rose-500"></span>{t('lateJobs')}</span><span className="text-rose-600 text-xl font-black">{workshopSums.sumLate}</span></div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm border-l-4 border-l-[#0B603A]">
-          <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">จำนวนอู่ในระบบทั้งหมด</span>
-          <span className="text-3xl font-black text-[#0B603A]">{workshopSums.totalWorkshops} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">อู่</span></span>
+          <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">{t('totalWorkshopsInSystem')}</span>
+          <span className="text-3xl font-black text-[#0B603A]">{workshopSums.totalWorkshops} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
         </div>
         <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm border-l-4 border-l-blue-500">
           <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">อู่ประสิทธิภาพ SLA ดีเยี่ยม (&gt;=80%)</span>
-          <span className="text-3xl font-black text-blue-600">{stats.workshopsData?.filter((w: any) => w.efficiencyRate >= 80).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">อู่</span></span>
+          <span className="text-3xl font-black text-blue-600">{stats.workshopsData?.filter((w: any) => w.efficiencyRate >= 80).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
         </div>
         <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm border-l-4 border-l-rose-500">
-          <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">อู่ที่พบล่าช้าสะสมเร่งด่วน</span>
-          <span className="text-3xl font-black text-rose-600">{stats.workshopsData?.filter((w: any) => w.lateCount > 0).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">อู่</span></span>
+          <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">{t('lateWorkshops')}</span>
+          <span className="text-3xl font-black text-rose-600">{stats.workshopsData?.filter((w: any) => w.lateCount > 0).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
         </div>
       </div>
 
@@ -147,7 +149,7 @@ export default function WorkshopsTab({
                 <th onClick={() => handleSort("successCount")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">สำเร็จ {sortField === "successCount" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                 <th onClick={() => handleSort("inProgressCount")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">กำลังซ่อม {sortField === "inProgressCount" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                 <th onClick={() => handleSort("lateCount")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">ล่าช้า {sortField === "lateCount" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
-                <th className="p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">เวลาเฉลี่ย</th>
+                <th className="p-2 sm:px-4 sm:py-3 font-bold text-center whitespace-nowrap">{t('avgRepairHours')}</th>
                 <th onClick={() => handleSort("efficiencyRate")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600 whitespace-nowrap">SLA {sortField === "efficiencyRate" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
               </tr>
             </thead>

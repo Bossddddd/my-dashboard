@@ -1,5 +1,5 @@
 import React from 'react';
-import { getStatusBadge, getPriorityBadge } from "../badges";
+import { StatusBadge, PriorityBadge } from "../badges";
 import { formatDateTime } from "../formatters";
 
 export default function VehicleDetailView({
@@ -39,13 +39,13 @@ export default function VehicleDetailView({
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="font-bold text-sm text-[#0B603A] hover:underline">ใบงาน: #{log.maintenanceLogId || log.id || "N/A"}</span>
-                {getStatusBadge(log.status)}
+                <StatusBadge status={log.status} />
               </div>
               <p className="text-sm text-gray-700 dark:text-slate-300 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed mb-3 break-words whitespace-normal">{log.description}</p>
               <div className="flex gap-6 text-xs text-gray-500 dark:text-slate-400 flex-wrap">
                 <div>ช่างซ่อม: <span className="font-bold text-gray-800 dark:text-slate-200">{log.technicianName || "-"}</span></div>
                 <div>วันที่แจ้ง: <span className="font-medium text-gray-800 dark:text-slate-200">{formatDateTime(log.reportedAt)}</span></div>
-                <div>ความเร่งด่วน: {getPriorityBadge(log.priority)}</div>
+                <div>ความเร่งด่วน: <PriorityBadge priority={log.priority} /></div>
               </div>
             </div>
           ))}

@@ -1,7 +1,9 @@
-import { getStatusBadge, getPriorityBadge } from "./badges";
+import { StatusBadge, PriorityBadge } from "./badges";
 import { formatDateTime } from "./formatters";
+import { useLanguage } from "../app/LanguageContext";
 
 export default function LogDetailModal({ activeLogModal, onClose }: { activeLogModal: any, onClose: () => void }) {
+  const { t } = useLanguage();
   if (!activeLogModal) return null;
 
   return (
@@ -15,42 +17,42 @@ export default function LogDetailModal({ activeLogModal, onClose }: { activeLogM
         </div>
         <div className="p-5 sm:p-6 space-y-5 text-sm overflow-y-auto max-h-[75vh]">
           <div className="bg-emerald-50 dark:bg-emerald-900/30/50 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
-            <span className="text-emerald-800 dark:text-emerald-300/60 block font-bold text-xs mb-1">หมายเลขทะเบียนรถที่เข้ารับการดูแล</span>
+            <span className="text-emerald-800 dark:text-emerald-300/60 block font-bold text-xs mb-1">{t('vehiclePlateLabel')}</span>
             <p className="font-black text-emerald-950 dark:text-emerald-100 text-2xl tracking-wide">{activeLogModal.vehiclePlate || activeLogModal.plate || "-"}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-50 dark:bg-slate-900 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
-              <span className="text-gray-500 dark:text-slate-400 block font-bold text-[11px] mb-1.5">สถานะใบงาน</span>
-              <div>{getStatusBadge(activeLogModal.status)}</div>
+              <span className="text-gray-500 dark:text-slate-400 block font-bold text-[11px] mb-1.5">{t('jobStatusLabel')}</span>
+              <div><StatusBadge status={activeLogModal.status} /></div>
             </div>
             <div className="bg-gray-50 dark:bg-slate-900 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
-              <span className="text-gray-500 dark:text-slate-400 block font-bold text-[11px] mb-1.5">ความเร่งด่วน</span>
-              <div>{getPriorityBadge(activeLogModal.priority)}</div>
+              <span className="text-gray-500 dark:text-slate-400 block font-bold text-[11px] mb-1.5">{t('priorityLabel')}</span>
+              <div><PriorityBadge priority={activeLogModal.priority} /></div>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">ศูนย์บริการ / อู่ที่รับผิดชอบ</span>
+              <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">{t('workshopLabel')}</span>
               <p className="font-bold text-gray-800 dark:text-slate-200 bg-white dark:bg-slate-800 py-2 px-3 rounded-lg border border-gray-200 dark:border-slate-700">{activeLogModal.workshopName || "-"}</p>
             </div>
             <div>
-              <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">ช่างผู้ดูแลซ่อมบำรุง</span>
+              <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">{t('techLabel')}</span>
               <p className="font-bold text-blue-700 bg-blue-50 dark:bg-blue-900/30 py-2 px-3 rounded-lg border border-blue-100 dark:border-blue-800/50">{activeLogModal.technicianName || "-"}</p>
             </div>
           </div>
           <div>
-            <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">รายละเอียดอาการชำรุดเสียหายเชิงลึก</span>
+            <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">{t('descLabel')}</span>
             <p className="text-gray-700 dark:text-slate-300 bg-slate-50 border border-slate-200 p-4 rounded-xl leading-relaxed whitespace-pre-wrap break-words font-medium shadow-inner text-sm">
               {activeLogModal.description || "ไม่มีคำอธิบายระบุข้อมูลเพิ่มเติม"}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-slate-700/50 text-[11px] sm:text-xs text-gray-500 dark:text-slate-400">
-            <div>วันที่แจ้งซ่อม: <span className="font-bold text-gray-800 dark:text-slate-200 block mt-1">{formatDateTime(activeLogModal.reportedAt)}</span></div>
-            <div>กำหนดเสร็จสิ้น: <span className="font-bold text-rose-600 block mt-1">{formatDateTime(activeLogModal.dueDate)}</span></div>
+            <div>{t('reportedAtLabel')}<span className="font-bold text-gray-800 dark:text-slate-200 block mt-1">{formatDateTime(activeLogModal.reportedAt)}</span></div>
+            <div>{t('dueDateLabel')}<span className="font-bold text-rose-600 block mt-1">{formatDateTime(activeLogModal.dueDate)}</span></div>
           </div>
         </div>
         <div className="p-4 bg-gray-50 dark:bg-slate-900 border-t flex justify-end">
-          <button onClick={onClose} className="bg-[#0B603A] hover:bg-[#08482b] text-white px-6 py-2 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95">ปิดหน้าต่าง</button>
+          <button onClick={onClose} className="bg-[#0B603A] hover:bg-[#08482b] text-white px-6 py-2 rounded-xl text-sm font-bold shadow-md transition-all active:scale-95">{t('closeWindow')}</button>
         </div>
       </div>
     </div>
