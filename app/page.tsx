@@ -12,6 +12,7 @@ import DashboardTab from "../components/views/DashboardTab";
 import WorkshopsTab from "../components/views/WorkshopsTab";
 import TechniciansTab from "../components/views/TechniciansTab";
 import VehicleDetailView from "../components/views/VehicleDetailView";
+import SettingsTab from "../components/views/SettingsTab";
 import DashboardSearchResultsView from "../components/DashboardSearchResults";
 import { getStatusBadge, getPriorityBadge } from "../components/badges";
 import { formatDateTime } from "../components/formatters";
@@ -22,8 +23,15 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [dashboardSearchResults, setDashboardSearchResults] = useState<DashboardSearchResults | null | undefined>(undefined);
   
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops' | 'technicians'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops' | 'technicians' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Close sidebar by default on mobile screens
+  useEffect(() => {
+    if (window.innerWidth < 640) {
+      setIsSidebarOpen(false);
+    }
+  }, []);
   
   const [selectedWorkshopDetail, setSelectedWorkshopDetail] = useState<any | null>(null);
   const [selectedTechnicianDetail, setSelectedTechnicianDetail] = useState<any | null>(null);
@@ -44,13 +52,61 @@ export default function Home() {
   const [currentWorkshopLogPage, setCurrentWorkshopLogPage] = useState(1);
   const [currentTechLogPage, setCurrentTechLogPage] = useState(1);
 
+  // Global Settings State
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [language, setLanguage] = useState('th');
+  const [dateRange, setDateRange] = useState('30d');
+  const [customDateStart, setCustomDateStart] = useState('');
+  const [customDateEnd, setCustomDateEnd] = useState('');
+  const [slaTarget, setSlaTarget] = useState('80');
+  const [lineToken, setLineToken] = useState('');
+
+  // Load from LocalStorage
   useEffect(() => {
-    const loadStats = async () => {
-      const data = await getDashboardStats();
-      if (data) setStats(data);
-    };
-    loadStats();
+    const savedDarkMode = localStorage.getItem('isDarkMode') === 'true';
+    const savedLang = localStorage.getItem('language') || 'th';
+    const savedDateRange = localStorage.getItem('dateRange') || '30d';
+    const savedCustomStart = localStorage.getItem('customDateStart') || '';
+    const savedCustomEnd = localStorage.getItem('customDateEnd') || '';
+    const savedSla = localStorage.getItem('slaTarget') || '80';
+    const savedToken = localStorage.getItem('lineToken') || '';
+
+    setIsDarkMode(savedDarkMode);
+    setLanguage(savedLang);
+    setDateRange(savedDateRange);
+    setCustomDateStart(savedCustomStart);
+    setCustomDateEnd(savedCustomEnd);
+    setSlaTarget(savedSla);
+    setLineToken(savedToken);
   }, []);
+
+  // Save to LocalStorage and apply dark mode
+  useEffect(() => {
+    localStorage.setItem('isDarkMode', String(isDarkMode));
+    localStorage.setItem('language', language);
+    localStorage.setItem('dateRange', dateRange);
+    localStorage.setItem('customDateStart', customDateStart);
+    localStorage.setItem('customDateEnd', customDateEnd);
+    localStorage.setItem('slaTarget', slaTarget);
+    localStorage.setItem('lineToken', lineToken);
+    
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode, language, dateRange, customDateStart, customDateEnd, slaTarget, lineToken]);
+
+  const loadStats = async () => {
+    const data = await getDashboardStats({ dateRange, customStart: customDateStart, customEnd: customDateEnd });
+    if (data) setStats(data);
+  };
+
+  useEffect(() => {
+    if (dateRange !== 'custom' || (customDateStart && customDateEnd)) {
+      loadStats();
+    }
+  }, [dateRange, customDateStart, customDateEnd]);
 
   useEffect(() => {
     setGlobalStatusFilter("all");
@@ -64,12 +120,15 @@ export default function Home() {
     setDashboardSearchResults(undefined);
   };
 
-  const handleTabChange = (tab: 'dashboard' | 'workshops' | 'technicians') => {
+  const handleTabChange = (tab: 'dashboard' | 'workshops' | 'technicians' | 'settings') => {
     setActiveTab(tab);
     setVehicleData(undefined);
     setDashboardSearchResults(undefined);
     setSelectedWorkshopDetail(null);
     setSelectedTechnicianDetail(null);
+    if (window.innerWidth < 640) {
+      setIsSidebarOpen(false);
+    }
   };
 
   const openWorkshopDetail = (workshop: any) => {
@@ -79,6 +138,7 @@ export default function Home() {
     setSelectedWorkshopDetail(workshop);
     setCurrentWorkshopLogPage(1);
     setActiveTab('workshops');
+    if (window.innerWidth < 640) setIsSidebarOpen(false);
   };
 
   const openTechnicianDetail = (technician: any) => {
@@ -88,6 +148,7 @@ export default function Home() {
     setSelectedTechnicianDetail(technician);
     setCurrentTechLogPage(1);
     setActiveTab('technicians');
+    if (window.innerWidth < 640) setIsSidebarOpen(false);
   };
 
   const executeSearch = async () => {
@@ -205,7 +266,7 @@ export default function Home() {
 
 
   const renderContent = () => {
-    if (!stats) return <div className="text-center p-10 text-gray-500 font-medium flex items-center justify-center gap-2"><span className="animate-spin text-xl">⏳</span> กำลังโหลดข้อมูล...</div>;
+    if (!stats) return <div className="text-center p-10 text-gray-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2"><span className="animate-spin text-xl">⏳</span> กำลังโหลดข้อมูล...</div>;
 
     if (dashboardSearchResults !== undefined) {
       return (
@@ -237,20 +298,20 @@ export default function Home() {
 
     if (activeTab === 'dashboard') {
       return (
-        <DashboardTab 
+        <DashboardTab
           stats={stats}
-          searchInput={searchInput}
-          setSearchInput={setSearchInput}
-          executeSearch={executeSearch}
           globalStatusFilter={globalStatusFilter}
+          setGlobalStatusFilter={setGlobalStatusFilter}
           globalPriorityFilter={globalPriorityFilter}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          handleSort={handleSort}
-          setActiveLogModal={setActiveLogModal}
+          setGlobalPriorityFilter={setGlobalPriorityFilter}
+          DASHBOARD_ITEMS_PER_PAGE={DASHBOARD_ITEMS_PER_PAGE}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-          DASHBOARD_ITEMS_PER_PAGE={DASHBOARD_ITEMS_PER_PAGE}
+          handleLogClick={setActiveLogModal}
+          getStatusBadge={getStatusBadge}
+          getPriorityBadge={getPriorityBadge}
+          formatDateTime={formatDateTime}
+          slaTarget={parseInt(slaTarget)}
         />
       );
     }
@@ -273,59 +334,80 @@ export default function Home() {
           stats={stats}
           workshopSums={workshopSums}
           processedWorkshops={processedWorkshops}
+          slaTarget={parseInt(slaTarget)}
         />
       );
     }
 
     if (activeTab === 'technicians') {
       return (
-        <TechniciansTab 
+        <TechniciansTab
+          stats={stats}
           selectedTechnicianDetail={selectedTechnicianDetail}
           setSelectedTechnicianDetail={setSelectedTechnicianDetail}
-          currentTechLogPage={currentTechLogPage}
-          setCurrentTechLogPage={setCurrentTechLogPage}
-          globalStatusFilter={globalStatusFilter}
-          globalPriorityFilter={globalPriorityFilter}
-          setMakeFilterValue={setMakeFilterValue}
           sortField={sortField}
           sortDirection={sortDirection}
           handleSort={handleSort}
-          setActiveLogModal={setActiveLogModal}
+          handleLogClick={setActiveLogModal}
+          getStatusBadge={getStatusBadge}
+          getPriorityBadge={getPriorityBadge}
+          formatDateTime={formatDateTime}
           GENERAL_ITEMS_PER_PAGE={GENERAL_ITEMS_PER_PAGE}
-          stats={stats}
-          techsData={techsData}
-          selectedWorkshop={selectedWorkshop}
-          setSelectedWorkshop={setSelectedWorkshop}
+          currentTechLogPage={currentTechLogPage}
+          setCurrentTechLogPage={setCurrentTechLogPage}
           currentTechPage={currentTechPage}
           setCurrentTechPage={setCurrentTechPage}
+          slaTarget={parseInt(slaTarget)}
+        />
+      );
+    }
+
+    if (activeTab === 'settings') {
+      return (
+        <SettingsTab 
+          isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
+          language={language} setLanguage={setLanguage}
+          dateRange={dateRange} setDateRange={setDateRange}
+          customDateStart={customDateStart} setCustomDateStart={setCustomDateStart}
+          customDateEnd={customDateEnd} setCustomDateEnd={setCustomDateEnd}
+          slaTarget={slaTarget} setSlaTarget={setSlaTarget}
+          lineToken={lineToken} setLineToken={setLineToken}
+          loadStats={loadStats}
         />
       );
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-sans overflow-hidden">
-      <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 flex-shrink-0 z-20 shadow-sm">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-slate-900 font-sans overflow-hidden">
+      <header className="h-14 sm:h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-3 sm:px-6 flex-shrink-0 z-20 shadow-sm">
         <div className="flex items-center gap-2 sm:gap-4">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:text-slate-200 p-1.5 rounded-lg hover:bg-gray-100 dark:bg-slate-800/50">
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <div className="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2">
             <div className="bg-[#0B603A] text-white font-black italic rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-sm tracking-widest border border-green-200 shadow-xs shrink-0">EVT</div>
-            <span className="font-black text-gray-800 text-[11px] sm:text-sm hidden sm:block tracking-wide whitespace-nowrap">EVT Admin Panel</span>
+            <span className="font-black text-gray-800 dark:text-slate-200 text-[11px] sm:text-sm hidden sm:block tracking-wide whitespace-nowrap">EVT Admin Panel</span>
           </div>
           <div className="h-5 sm:h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
           <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
-            {vehicleData !== undefined ? "ประวัติรถ" : selectedWorkshopDetail ? `อู่: ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `ช่าง: ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? "Dashboard ซ่อมบำรุง" : activeTab === 'workshops' ? "อู่ซ่อม" : "ทีมช่าง"}
+            {vehicleData !== undefined ? "ประวัติรถ" : selectedWorkshopDetail ? `อู่: ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `ช่าง: ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? "Dashboard ซ่อมบำรุง" : activeTab === 'workshops' ? "อู่ซ่อม" : activeTab === 'technicians' ? "ทีมช่าง" : "ตั้งค่าระบบ"}
           </h1>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden relative">
-        <div className={`absolute sm:relative flex-shrink-0 h-full transition-all duration-300 ease-in-out bg-white z-10 shadow-lg sm:shadow-none ${isSidebarOpen ? "w-64 opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-full"}`}>
+        {/* Mobile Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="absolute inset-0 bg-black/50 z-20 sm:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        <div className={`absolute sm:relative flex-shrink-0 h-full transition-all duration-300 ease-in-out bg-white dark:bg-slate-800 z-30 sm:z-10 shadow-2xl sm:shadow-none ${isSidebarOpen ? "w-64 opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-full"}`}>
           <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
-        <main className="flex-1 overflow-y-auto p-2 sm:p-6 w-full">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 w-full relative z-10">
           <div className="mx-auto max-w-[1400px]">
             {renderContent()}
           </div>

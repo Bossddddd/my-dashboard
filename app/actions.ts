@@ -25,14 +25,32 @@ export async function searchVehicleByPlate(plate: string) {
   }
 }
 
-export async function getDashboardStats() {
+export async function getDashboardStats(options?: { dateRange?: string, customStart?: string, customEnd?: string }) {
   try {
+    let dateFilter: any = undefined;
+    if (options && options.dateRange && options.dateRange !== 'all') {
+      const now = new Date();
+      if (options.dateRange === 'custom' && options.customStart && options.customEnd) {
+        dateFilter = { gte: new Date(options.customStart), lte: new Date(options.customEnd) };
+      } else if (options.dateRange === '7d') {
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 7)) };
+      } else if (options.dateRange === '30d') {
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) };
+      } else if (options.dateRange === '6m') {
+        dateFilter = { gte: new Date(now.setMonth(now.getMonth() - 6)) };
+      } else if (options.dateRange === '1y') {
+        dateFilter = { gte: new Date(now.setFullYear(now.getFullYear() - 1)) };
+      }
+    }
+
+    const whereClause = dateFilter ? { reportedAt: dateFilter } : undefined;
+
     const totalVehicles = await prisma.vehicle.count();
-    const totalLogs = await prisma.maintenanceLog.count();
+    const totalLogs = await prisma.maintenanceLog.count({ where: whereClause });
     
-    const statusGroups = await prisma.maintenanceLog.groupBy({ by: ['status'], _count: { id: true } });
-    const priorityGroups = await prisma.maintenanceLog.groupBy({ by: ['priority'], _count: { id: true } });
-    const costAgg = await prisma.maintenanceLog.aggregate({ _sum: { cost: true } });
+    const statusGroups = await prisma.maintenanceLog.groupBy({ by: ['status'], _count: { id: true }, where: whereClause });
+    const priorityGroups = await prisma.maintenanceLog.groupBy({ by: ['priority'], _count: { id: true }, where: whereClause });
+    const costAgg = await prisma.maintenanceLog.aggregate({ _sum: { cost: true }, where: whereClause });
 
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
@@ -68,6 +86,7 @@ export async function getDashboardStats() {
     const monthlyStats = Array.from(monthlyMap.values()).reverse();
 
     const allLogs = await prisma.maintenanceLog.findMany({
+      where: whereClause,
       select: { 
         id: true, status: true, priority: true, description: true, technicianName: true,
         reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, workshopName: true,
@@ -380,5 +399,42 @@ export async function searchDashboardData(query: string) {
   } catch (error) {
     console.error("Search Error:", error);
     return null;
+  }
+}
+
+export async function deleteDataByYear(yearString: string) {
+  try {
+    const year = parseInt(yearString, 10);
+    if (isNaN(year)) throw new Error("Invalid year");
+    
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
+    
+    const result = await prisma.maintenanceLog.deleteMany({
+      where: {
+        reportedAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    });
+    
+    return { success: true, count: result.count };
+  } catch (error) {
+    console.error("Delete by year error:", error);
+    return { success: false, error: "เกิดข้อผิดพลาดในการลบข้อมูล" };
+  }
+}
+
+export async function resetDatabase() {
+  try {
+    // Note: Due to foreign key constraints, we should delete logs first, then vehicles.
+    const logsResult = await prisma.maintenanceLog.deleteMany({});
+    const vehiclesResult = await prisma.vehicle.deleteMany({});
+    
+    return { success: true, logsCount: logsResult.count, vehiclesCount: vehiclesResult.count };
+  } catch (error) {
+    console.error("Reset database error:", error);
+    return { success: false, error: "เกิดข้อผิดพลาดในการรีเซ็ตฐานข้อมูล" };
   }
 }
