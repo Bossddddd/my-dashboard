@@ -121,18 +121,6 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
         if (diff >= 0) { totalRepairTimeMs += diff; repairCount++; }
       }
-      if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
-        if (now > new Date(log.dueDate)) { 
-          overdueActiveCount++; 
-          overdueTasks.push({
-            id: log.id, plate: log.vehicle?.plate, description: log.description,
-            technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate,
-            workshopName: log.workshopName,
-            reportedAt: log.reportedAt ? log.reportedAt.toISOString() : ""
-          });
-        }
-      }
-
       const rawWorkshop = log.workshopName ? log.workshopName.trim() : "";
       if (rawWorkshop !== "") {
         if (!workshopMap.has(rawWorkshop)) {
@@ -207,10 +195,35 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       }
     }
 
-    overdueTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    const efficiency = {
+      onTimeRate: totalCompleted > 0 ? Math.round((onTimeCompleted / totalCompleted) * 100) : 0,
+      avgResponseTimeHours: responseCount > 0 ? Math.round((totalResponseTimeMs / responseCount) / (1000 * 60 * 60) * 10) / 10 : 0,
+      avgRepairTimeHours: repairCount > 0 ? Math.round((totalRepairTimeMs / repairCount) / (1000 * 60 * 60) * 10) / 10 : 0,
+    };
 
-    const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
-    const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
+    // Query OVERDUE TASKS globally regardless of the reportedAt date range filter!
+    const overdueLogs = await prisma.maintenanceLog.findMany({
+      where: {
+        status: { notIn: ['completed', 'cancelled'] },
+        dueDate: { lt: now }
+      },
+      select: {
+        id: true, description: true, technicianName: true, status: true, priority: true, dueDate: true, workshopName: true, reportedAt: true,
+        vehicle: { select: { plate: true } }
+      },
+      orderBy: { dueDate: 'asc' }
+    });
+
+    overdueActiveCount = overdueLogs.length;
+    for (const log of overdueLogs) {
+      overdueTasks.push({
+        id: log.id, plate: log.vehicle?.plate, description: log.description,
+        technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate,
+        workshopName: log.workshopName,
+        reportedAt: log.reportedAt ? log.reportedAt.toISOString() : ""
+      });
+    }
+
     const completedLateCount = totalCompleted - onTimeCompleted;
     const onTimeRate = calculateSlaRate(onTimeCompleted, completedLateCount + overdueActiveCount);
 
@@ -235,6 +248,9 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         })
       };
     });
+
+    const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
+    const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
 
     return {
       totalVehicles, totalLogs,

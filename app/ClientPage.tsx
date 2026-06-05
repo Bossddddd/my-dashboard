@@ -21,7 +21,7 @@ import { formatDateTime } from "../components/formatters";
 import { LanguageProvider } from "./LanguageContext";
 import { getTranslation } from "@/lib/i18n";
 
-export default function Home({ initialStats }: { initialStats: any }) {
+export default function Home({ initialStats, initialDateRange, initialCustomStart, initialCustomEnd }: any) {
   const [vehicleData, setVehicleData] = useState<VehicleRecord | null | undefined>(undefined);
   const [stats, setStats] = useState<any>(initialStats);
   const [searchInput, setSearchInput] = useState("");
@@ -59,36 +59,35 @@ export default function Home({ initialStats }: { initialStats: any }) {
   // Global Settings State
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [language, setLanguage] = useState('th');
-  const [dateRange, setDateRange] = useState('30d');
-  const [customDateStart, setCustomDateStart] = useState('');
-  const [customDateEnd, setCustomDateEnd] = useState('');
+  const [dateRange, setDateRange] = useState(initialDateRange || '30d');
+  const [customDateStart, setCustomDateStart] = useState(initialCustomStart || '');
+  const [customDateEnd, setCustomDateEnd] = useState(initialCustomEnd || '');
   const [slaTarget, setSlaTarget] = useState('80');
 
   // Load from LocalStorage
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('isDarkMode') === 'true';
     const savedLang = localStorage.getItem('language') || 'th';
-    const savedDateRange = localStorage.getItem('dateRange') || '30d';
-    const savedCustomStart = localStorage.getItem('customDateStart') || '';
-    const savedCustomEnd = localStorage.getItem('customDateEnd') || '';
     const savedSla = localStorage.getItem('slaTarget') || '80';
 
     setIsDarkMode(savedDarkMode);
     setLanguage(savedLang);
-    setDateRange(savedDateRange);
-    setCustomDateStart(savedCustomStart);
-    setCustomDateEnd(savedCustomEnd);
     setSlaTarget(savedSla);
   }, []);
 
-  // Save to LocalStorage and apply dark mode
+  // Save to LocalStorage, Cookies, and apply dark mode
   useEffect(() => {
     localStorage.setItem('isDarkMode', String(isDarkMode));
     localStorage.setItem('language', language);
+    localStorage.setItem('slaTarget', slaTarget);
+    
+    // Save date preferences to Cookies for SSR and LocalStorage for client
+    document.cookie = `dateRange=${dateRange}; path=/; max-age=31536000`;
+    document.cookie = `customDateStart=${customDateStart}; path=/; max-age=31536000`;
+    document.cookie = `customDateEnd=${customDateEnd}; path=/; max-age=31536000`;
     localStorage.setItem('dateRange', dateRange);
     localStorage.setItem('customDateStart', customDateStart);
     localStorage.setItem('customDateEnd', customDateEnd);
-    localStorage.setItem('slaTarget', slaTarget);
     
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -103,6 +102,7 @@ export default function Home({ initialStats }: { initialStats: any }) {
   };
 
   useEffect(() => {
+    // Only fetch if date range is different from initial or we need fresh data
     if (dateRange !== 'custom' || (customDateStart && customDateEnd)) {
       loadStats();
     }
