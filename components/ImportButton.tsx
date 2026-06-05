@@ -18,11 +18,10 @@ export default function ImportButton() {
     setProgress(0);
     const toastId = toast.loading("กำลังเตรียมอ่านไฟล์...");
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
+    const processData = async (bufferOrString: string | ArrayBuffer) => {
       try {
-        const buffer = event.target?.result;
-        const workbook = XLSX.read(buffer, { type: "array" });
+        const isString = typeof bufferOrString === "string";
+        const workbook = XLSX.read(bufferOrString, { type: isString ? "string" : "array" });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         
@@ -72,7 +71,20 @@ export default function ImportButton() {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     };
-    reader.readAsArrayBuffer(file);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const result = event.target?.result;
+      if (result) {
+        await processData(result);
+      }
+    };
+
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      reader.readAsText(file, "UTF-8");
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   return (
