@@ -18,7 +18,7 @@ export default function DashboardTab({
   sortField,
   sortDirection,
   handleSort,
-  setActiveLogModal,
+  handleLogClick,
   currentPage,
   setCurrentPage,
   DASHBOARD_ITEMS_PER_PAGE
@@ -186,7 +186,7 @@ export default function DashboardTab({
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white dark:bg-slate-800">
                 {currentOverdueTasks.map((task: any, idx: number) => (
-                  <tr key={task.id} onClick={() => setActiveLogModal(task)} className="hover:bg-rose-50 dark:bg-rose-900/30/40 cursor-pointer transition-colors">
+                  <tr key={task.id} onClick={() => handleLogClick && handleLogClick(task)} className="hover:bg-rose-50 dark:bg-rose-900/30/40 cursor-pointer transition-colors">
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-400 dark:text-slate-500 align-top whitespace-nowrap">{startIndex + idx + 1}</td>
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{task.plate || "-"}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{task.description}</div></td>

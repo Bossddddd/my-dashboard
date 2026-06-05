@@ -19,7 +19,7 @@ export default function TechniciansTab({
   sortField,
   sortDirection,
   handleSort,
-  setActiveLogModal,
+  handleLogClick,
   GENERAL_ITEMS_PER_PAGE,
   stats,
   techsData,
@@ -115,7 +115,7 @@ export default function TechniciansTab({
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white dark:bg-slate-800">
                 {currentLogs.map((log: import('../../lib/types').MaintenanceLog, idx: number) => (
-                  <tr key={idx} onClick={() => setActiveLogModal(log)} className="hover:bg-emerald-50 dark:bg-emerald-900/30/30 cursor-pointer transition-colors">
+                  <tr key={idx} onClick={() => handleLogClick(log)} className="hover:bg-emerald-50 dark:bg-emerald-900/30/30 cursor-pointer transition-colors">
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{log.vehiclePlate}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-800 dark:text-slate-200 font-bold align-top whitespace-nowrap">{log.workshopName}</td>

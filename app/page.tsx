@@ -12,7 +12,8 @@ import LogDetailModal from "../components/LogDetailModal";
 import DashboardTab from "../components/views/DashboardTab";
 import WorkshopsTab from "../components/views/WorkshopsTab";
 import TechniciansTab from "../components/views/TechniciansTab";
-import VehicleDetailView from "../components/views/VehicleDetailView";
+import VehicleDetailView from '@/components/views/VehicleDetailView';
+import ImportButton from '@/components/ImportButton';
 import SettingsTab from "../components/views/SettingsTab";
 import DashboardSearchResultsView from "../components/DashboardSearchResults";
 import { StatusBadge, PriorityBadge } from "../components/badges";
@@ -299,6 +300,9 @@ export default function Home() {
       return (
         <DashboardTab
           stats={stats}
+          searchInput={searchInput}
+          setSearchInput={setSearchInput}
+          executeSearch={executeSearch}
           globalStatusFilter={globalStatusFilter}
           setGlobalStatusFilter={setGlobalStatusFilter}
           globalPriorityFilter={globalPriorityFilter}
@@ -347,6 +351,9 @@ export default function Home() {
           setSelectedWorkshop={setSelectedWorkshop}
           selectedTechnicianDetail={selectedTechnicianDetail}
           setSelectedTechnicianDetail={setSelectedTechnicianDetail}
+          globalStatusFilter={globalStatusFilter}
+          globalPriorityFilter={globalPriorityFilter}
+          setMakeFilterValue={setMakeFilterValue}
           sortField={sortField}
           sortDirection={sortDirection}
           handleSort={handleSort}
@@ -396,6 +403,8 @@ export default function Home() {
               <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
                 {vehicleData !== undefined ? getTranslation(language, 'historyLog') : selectedWorkshopDetail ? `${getTranslation(language, 'workshopTitle')} ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `${getTranslation(language, 'technicianTitle')} ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? getTranslation(language, 'maintenanceDashboard') : activeTab === 'workshops' ? getTranslation(language, 'workshops') : activeTab === 'technicians' ? getTranslation(language, 'technicians') : getTranslation(language, 'settings')}
               </h1>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4">
             </div>
           </header>
 

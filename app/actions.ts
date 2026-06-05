@@ -126,7 +126,9 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           overdueActiveCount++; 
           overdueTasks.push({
             id: log.id, plate: log.vehicle?.plate, description: log.description,
-            technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate
+            technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate,
+            workshopName: log.workshopName,
+            reportedAt: log.reportedAt ? log.reportedAt.toISOString() : ""
           });
         }
       }
@@ -336,15 +338,22 @@ export async function searchDashboardData(query: string) {
 
     const searchTerm = query.trim();
 
+    const searchConditions: any[] = [
+      { vehicle: { plate: { contains: searchTerm, mode: 'insensitive' } } },
+      { description: { contains: searchTerm, mode: 'insensitive' } },
+      { technicianName: { contains: searchTerm, mode: 'insensitive' } },
+      { workshopName: { contains: searchTerm, mode: 'insensitive' } }
+    ];
+
+    const parsedId = parseInt(searchTerm, 10);
+    if (!isNaN(parsedId)) {
+      searchConditions.push({ id: parsedId });
+    }
+
     // 1. ค้นหาประวัติจากตาราง MaintenanceLog ที่ตรงกับคำค้นหา
     const logs = await prisma.maintenanceLog.findMany({
       where: {
-        OR: [
-          { vehicle: { plate: { contains: searchTerm, mode: 'insensitive' } } },
-          { description: { contains: searchTerm, mode: 'insensitive' } },
-          { technicianName: { contains: searchTerm, mode: 'insensitive' } },
-          { workshopName: { contains: searchTerm, mode: 'insensitive' } }
-        ]
+        OR: searchConditions
       },
       include: {
         vehicle: { select: { plate: true } }

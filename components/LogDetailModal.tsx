@@ -19,7 +19,7 @@ export default function LogDetailModal({ activeLogModal, onClose }: { activeLogM
         <div className="p-5 sm:p-6 space-y-5 text-sm overflow-y-auto max-h-[75vh]">
           <div className="bg-emerald-50 dark:bg-emerald-900/30/50 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
             <span className="text-emerald-800 dark:text-emerald-300/60 block font-bold text-xs mb-1">{t('vehiclePlateLabel')}</span>
-            <p className="font-black text-emerald-950 dark:text-emerald-100 text-2xl tracking-wide">{activeLogModal.vehiclePlate || activeLogModal.vehiclePlate || "-"}</p>
+            <p className="font-black text-emerald-950 dark:text-emerald-100 text-2xl tracking-wide">{activeLogModal.vehiclePlate || activeLogModal.plate || "-"}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-50 dark:bg-slate-900 p-3 rounded-lg border border-gray-100 dark:border-slate-700/50">
