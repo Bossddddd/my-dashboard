@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "EVT Admin Panel",
   description: "ระบบจัดการซ่อมบำรุงยานพาหนะ",
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
