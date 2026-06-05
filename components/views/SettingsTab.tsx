@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { deleteDataByYear, resetDatabase } from '../../app/actions';
 import { useLanguage } from '../../app/LanguageContext';
@@ -11,7 +11,21 @@ export default function SettingsTab({
   customDateEnd, setCustomDateEnd,
   slaTarget, setSlaTarget,
   loadStats
-}: any) {
+}: {
+  isDarkMode: boolean;
+  setIsDarkMode: (v: boolean) => void;
+  language: string;
+  setLanguage: (v: string) => void;
+  dateRange: string;
+  setDateRange: (v: string) => void;
+  customDateStart: string;
+  setCustomDateStart: (v: string) => void;
+  customDateEnd: string;
+  setCustomDateEnd: (v: string) => void;
+  slaTarget: string;
+  setSlaTarget: (v: string) => void;
+  loadStats: () => void;
+}) {
   const { t } = useLanguage();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteType, setDeleteType] = useState<'old' | 'all' | null>(null);
@@ -51,7 +65,7 @@ export default function SettingsTab({
         }
       }
       loadStats();
-    } catch (error) {
+    } catch {
       toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ', { id: loadingToast });
     }
     setDeleteType(null);

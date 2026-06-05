@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import ImportButton from "./ImportButton";
 
 interface NavbarProps {
@@ -22,13 +23,13 @@ export default function Navbar({ onSearch }: NavbarProps) {
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm z-10">
       
       {/* โลโก้ / ชื่อโปรเจกต์ (ปรับเป็นลิงก์เพื่อให้กดกลับหน้า Home ได้) */}
-      <a 
+      <Link 
         href="/" 
         className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors cursor-pointer"
         title="กลับหน้าหลัก"
       >
         Maintenance-Dashboard
-      </a>
+      </Link>
       
       {/* พื้นที่ด้านขวา: ช่องค้นหา + ปุ่มนำเข้าไฟล์ */}
       <div className="flex items-center gap-4">

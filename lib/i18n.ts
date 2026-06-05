@@ -339,6 +339,6 @@ export type Language = 'th' | 'en';
 export type TranslationKey = keyof typeof translations['th'];
 
 export function getTranslation(lang: string, key: TranslationKey): string {
-  const selectedLang = (translations as any)[lang] || translations['th'];
+  const selectedLang = (translations as Record<string, typeof translations['th']>)[lang] || translations['th'];
   return selectedLang[key] || translations['th'][key] || key;
 }

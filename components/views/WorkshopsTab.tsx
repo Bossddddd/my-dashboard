@@ -24,14 +24,34 @@ export default function WorkshopsTab({
   workshopSums,
   processedWorkshops,
   slaTarget
-}: any) {
+}: {
+  selectedWorkshopDetail: import('../../lib/types').WorkshopStat | null;
+  setSelectedWorkshopDetail: (w: import('../../lib/types').WorkshopStat | null) => void;
+  currentWorkshopLogPage: number;
+  setCurrentWorkshopLogPage: (p: number) => void;
+  globalStatusFilter: string;
+  globalPriorityFilter: string;
+  setMakeFilterValue: (k: string, v: string) => void;
+  sortField: string;
+  sortDirection: 'asc' | 'desc';
+  handleSort: (f: string) => void;
+  formatDateTime?: any;
+  PriorityBadge?: any;
+  StatusBadge?: any;
+  setActiveLogModal: (log: import('../../lib/types').MaintenanceLog) => void;
+  GENERAL_ITEMS_PER_PAGE: number;
+  processedWorkshops: import('../../lib/types').WorkshopStat[];
+  workshopSums: { sumSuccess: number, sumInProgress: number, sumLate: number, totalWorkshops: number };
+  slaTarget: number;
+  stats: import('../../lib/types').DashboardStatsData;
+}) {
   const { t } = useLanguage();
   if (selectedWorkshopDetail) {
     const w = selectedWorkshopDetail;
     
     let logList = w.logs || [];
-    if (globalStatusFilter !== "all") logList = logList.filter((l: any) => l.status === globalStatusFilter);
-    if (globalPriorityFilter !== "all") logList = logList.filter((l: any) => l.priority === globalPriorityFilter);
+    if (globalStatusFilter !== "all") logList = logList.filter((l: import('../../lib/types').MaintenanceLog) => l.status === globalStatusFilter);
+    if (globalPriorityFilter !== "all") logList = logList.filter((l: import('../../lib/types').MaintenanceLog) => l.priority === globalPriorityFilter);
     if (sortField) logList = sortedArray(logList, sortField, sortDirection);
 
     const totalWorkshopLogs = logList.length;
@@ -87,14 +107,14 @@ export default function WorkshopsTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white dark:bg-slate-800">
-                {currentLogs.map((log: any, idx: number) => (
+                {currentLogs.map((log: import('../../lib/types').MaintenanceLog, idx: number) => (
                   <tr key={idx} onClick={() => setActiveLogModal(log)} className="hover:bg-emerald-50 dark:bg-emerald-900/30/30 cursor-pointer transition-colors">
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{log.vehiclePlate}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-800 dark:text-slate-200 font-bold align-top whitespace-nowrap">{log.technicianName}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap"><PriorityBadge priority={log.priority} /></td>
                     <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={log.status} /></td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
+                    <td className="p-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate || '')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -127,11 +147,11 @@ export default function WorkshopsTab({
         </div>
         <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm border-l-4 border-l-blue-500">
           <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">อู่ประสิทธิภาพ SLA ดีเยี่ยม (&gt;=80%)</span>
-          <span className="text-3xl font-black text-blue-600">{stats.workshopsData?.filter((w: any) => w.efficiencyRate >= 80).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
+          <span className="text-3xl font-black text-blue-600">{stats.workshopsData?.filter((w: import('../../lib/types').WorkshopStat) => w.efficiencyRate >= 80).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
         </div>
         <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm border-l-4 border-l-rose-500">
           <span className="text-gray-500 dark:text-slate-400 text-xs font-bold block mb-1">{t('lateWorkshops')}</span>
-          <span className="text-3xl font-black text-rose-600">{stats.workshopsData?.filter((w: any) => w.lateCount > 0).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
+          <span className="text-3xl font-black text-rose-600">{stats.workshopsData?.filter((w: import('../../lib/types').WorkshopStat) => w.lateCount > 0).length} <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{t('workshopsUnit')}</span></span>
         </div>
       </div>
 

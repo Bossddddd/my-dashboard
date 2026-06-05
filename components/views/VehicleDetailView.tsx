@@ -7,7 +7,7 @@ export default function VehicleDetailView({
   setVehicleData,
   setSearchInput,
   setActiveLogModal
-}: any) {
+}: { vehicle?: import('../../lib/types').VehicleRecord, vehicleData?: import('../../lib/types').VehicleRecord | null, setVehicleData?: any, setSearchInput?: any, setActiveLogModal?: any, onClose: () => void, formatDateTime: (d: string) => any }) {
   if (vehicleData === null) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -24,17 +24,17 @@ export default function VehicleDetailView({
       <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
         <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-3xl shrink-0">🚌</div>
         <div>
-          <h2 className="text-2xl font-black text-[#0B603A]">{vehicleData.vehiclePlate}</h2>
-          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">ยี่ห้อ/รุ่น: {vehicleData.brand || "-"} {vehicleData.model || "-"} (รหัส ID-{vehicleData.vehicleId})</p>
+          <h2 className="text-2xl font-black text-[#0B603A]">{vehicleData?.vehiclePlate}</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">ยี่ห้อ/รุ่น: {vehicleData?.brand || "-"} {vehicleData?.model || "-"} (รหัส ID-{vehicleData?.vehicleId})</p>
         </div>
       </div>
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700/50"><p className="text-sm font-bold text-gray-800 dark:text-slate-200">📋 ประวัติการแจ้งซ่อม</p></div>
         <div className="divide-y divide-gray-100">
-          {vehicleData.maintenanceHistory?.map((log: any, idx: number) => (
+          {vehicleData?.maintenanceHistory?.map((log: import('../../lib/types').MaintenanceLog, idx: number) => (
             <div 
               key={idx} 
-              onClick={() => setActiveLogModal({ ...log, vehiclePlate: vehicleData.vehiclePlate })} 
+              onClick={() => setActiveLogModal({ ...log, vehiclePlate: vehicleData?.vehiclePlate })} 
               className="p-5 hover:bg-gray-50 dark:bg-slate-900/50 cursor-pointer transition-colors"
             >
               <div className="flex justify-between items-center mb-2">
@@ -44,12 +44,12 @@ export default function VehicleDetailView({
               <p className="text-sm text-gray-700 dark:text-slate-300 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed mb-3 break-words whitespace-normal">{log.description}</p>
               <div className="flex gap-6 text-xs text-gray-500 dark:text-slate-400 flex-wrap">
                 <div>ช่างซ่อม: <span className="font-bold text-gray-800 dark:text-slate-200">{log.technicianName || "-"}</span></div>
-                <div>วันที่แจ้ง: <span className="font-medium text-gray-800 dark:text-slate-200">{formatDateTime(log.reportedAt)}</span></div>
+                <div>วันที่แจ้ง: <span className="font-medium text-gray-800 dark:text-slate-200">{formatDateTime(log.reportedAt || '')}</span></div>
                 <div>ความเร่งด่วน: <PriorityBadge priority={log.priority} /></div>
               </div>
             </div>
           ))}
-          {(!vehicleData.maintenanceHistory || vehicleData.maintenanceHistory.length === 0) && (
+          {(!vehicleData?.maintenanceHistory || vehicleData?.maintenanceHistory.length === 0) && (
             <div className="p-8 text-center text-gray-400 dark:text-slate-500 font-medium">ไม่พบประวัติการซ่อมบำรุง</div>
           )}
         </div>
