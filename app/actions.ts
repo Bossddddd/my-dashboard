@@ -162,12 +162,12 @@ export async function getDashboardStats() {
           if (!wStats.techsMap.has(rawTech)) {
             wStats.techsMap.set(rawTech, {
               name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0,
-              logs: [] // 🚀 เพิ่ม Array เก็บใบงานรายคน
+              logs: [] 
             });
           }
           const tStats = wStats.techsMap.get(rawTech);
           tStats.totalJobs++;
-          tStats.logs.push(logDataForList); // 🚀 โยนใบงานเข้าประวัติของช่าง
+          tStats.logs.push(logDataForList); 
 
           if (log.status === 'completed') {
             if (log.dueDate && log.completedAt) {
@@ -209,7 +209,7 @@ export async function getDashboardStats() {
             name: t.name, totalJobs: t.totalJobs, successCount: t.completedOnTime,
             inProgressCount: t.inProgress, lateCount: tLateCount,
             efficiencyRate: Math.round(tEfficiency * 10) / 10,
-            logs: t.logs // 🚀 ส่งข้อมูลใบงานของช่างออกไปให้ Frontend
+            logs: t.logs 
           };
         })
       };
@@ -305,5 +305,80 @@ export async function importMaintenanceData(rows: any[]) {
     return { success: true, message: `นำเข้าข้อมูลสำเร็จ` };
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึกข้อมูล" };
+  }
+}
+
+// -------------------------------------------------------------
+// 🔥 ฟังก์ชันใหม่: สำหรับค้นหาข้อมูลแบบครอบคลุม (ทะเบียนรถ, ช่าง, อู่)
+// -------------------------------------------------------------
+export async function searchDashboardData(query: string) {
+  try {
+    if (!query || query.trim() === "") return null;
+
+    const searchTerm = query.trim();
+
+    // 1. ค้นหาประวัติจากตาราง MaintenanceLog ที่ตรงกับคำค้นหา
+    const logs = await prisma.maintenanceLog.findMany({
+      where: {
+        OR: [
+          { vehicle: { plate: { contains: searchTerm, mode: 'insensitive' } } },
+          { description: { contains: searchTerm, mode: 'insensitive' } },
+          { technicianName: { contains: searchTerm, mode: 'insensitive' } },
+          { workshopName: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+      },
+      include: {
+        vehicle: { select: { plate: true } }
+      },
+      orderBy: { reportedAt: 'desc' }
+    });
+
+    // 2. จัดรูปแบบใบแจ้งซ่อมให้ตรงกับ Props ของ DashboardSearchResults
+    const formattedLogs = logs.map(log => ({
+      id: log.id,
+      maintenanceLogId: log.id,
+      vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
+      description: log.description,
+      technicianName: log.technicianName || "ไม่ระบุ",
+      workshopName: log.workshopName || "ไม่ระบุ",
+      status: log.status,
+      priority: log.priority,
+      reportedAt: log.reportedAt ? log.reportedAt.toISOString() : null,
+      dueDate: log.dueDate ? log.dueDate.toISOString() : null,
+    }));
+
+    // 3. จัดกลุ่ม อู่ และ ช่าง จากผลลัพธ์ที่ค้นเจอ (เพื่อแสดงเป็นแท็บอู่/แท็บช่าง)
+    const workshopMap = new Map();
+    const technicianMap = new Map();
+
+    formattedLogs.forEach(log => {
+      // นับข้อมูลอู่
+      if (log.workshopName !== "ไม่ระบุ") {
+        if (!workshopMap.has(log.workshopName)) {
+          workshopMap.set(log.workshopName, { name: log.workshopName, totalJobs: 0, successCount: 0, lateCount: 0, efficiencyRate: 100 });
+        }
+        workshopMap.get(log.workshopName).totalJobs++;
+      }
+      
+      // นับข้อมูลช่าง
+      if (log.technicianName !== "ไม่ระบุ") {
+        if (!technicianMap.has(log.technicianName)) {
+          technicianMap.set(log.technicianName, { name: log.technicianName, totalJobs: 0, successCount: 0, lateCount: 0, efficiencyRate: 100 });
+        }
+        technicianMap.get(log.technicianName).totalJobs++;
+      }
+    });
+
+    return {
+      query: searchTerm,
+      workshops: Array.from(workshopMap.values()),
+      technicians: Array.from(technicianMap.values()),
+      logs: formattedLogs,
+      total: formattedLogs.length
+    };
+
+  } catch (error) {
+    console.error("Search Error:", error);
+    return null;
   }
 }

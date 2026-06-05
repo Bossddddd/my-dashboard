@@ -1,19 +1,9 @@
-export default function PurePieChart({
-  success,
-  inProgress,
-  late,
-  size = "sm",
-}: {
-  success: number;
-  inProgress: number;
-  late: number;
-  size?: "sm" | "lg";
-}) {
+export default function PurePieChart({ success, inProgress, late, size = 'sm' }: { success: number, inProgress: number, late: number, size?: 'sm' | 'lg' }) {
   const total = success + inProgress + late;
-  const sizeClass = size === "lg" ? "w-48 h-48 sm:w-56 sm:h-56" : "w-24 h-24";
-  const innerSizeClass = size === "lg" ? "w-32 h-32 sm:w-36 h-36" : "w-14 h-14";
-  const textClass = size === "lg" ? "text-3xl sm:text-4xl" : "text-sm";
-  const subTextClass = size === "lg" ? "text-xs sm:text-sm" : "text-[9px]";
+  const sizeClass = size === 'lg' ? 'w-48 h-48 sm:w-56 sm:h-56' : 'w-24 h-24';
+  const innerSizeClass = size === 'lg' ? 'w-32 h-32 sm:w-36 h-36' : 'w-14 h-14';
+  const textClass = size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-sm';
+  const subTextClass = size === 'lg' ? 'text-xs sm:text-sm' : 'text-[9px]';
 
   if (total === 0) {
     return (
@@ -23,14 +13,14 @@ export default function PurePieChart({
     );
   }
 
-  const successPercent = (success / total) * 100;
-  const inProgressPercent = (inProgress / total) * 100;
+  const p1 = (success / total) * 100;
+  const p2 = (inProgress / total) * 100;
 
   return (
-    <div
-      className={`relative ${sizeClass} rounded-full flex items-center justify-center shadow-sm shrink-0`}
+    <div 
+      className={`relative ${sizeClass} rounded-full flex items-center justify-center shadow-sm shrink-0`} 
       style={{
-        background: `conic-gradient(#10B981 0% ${successPercent}%, #F59E0B ${successPercent}% ${successPercent + inProgressPercent}%, #EF4444 ${successPercent + inProgressPercent}% 100%)`,
+        background: `conic-gradient(#10B981 0% ${p1}%, #F59E0B ${p1}% ${p1 + p2}%, #EF4444 ${p1 + p2}% 100%)`
       }}
     >
       <div className={`${innerSizeClass} bg-white rounded-full flex flex-col items-center justify-center text-center shadow-sm`}>
