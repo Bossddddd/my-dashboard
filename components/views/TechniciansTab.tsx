@@ -76,14 +76,14 @@ export default function TechniciansTab({
 
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-16 w-full">
           <div className="flex flex-col items-center shrink-0">
-            <h3 className="font-black text-gray-900 dark:text-slate-100 text-xl mb-6 text-center border-b pb-2 px-4 border-gray-100 dark:border-slate-700/50">👨‍🔧 {bottomTech.name}</h3>
-            <PurePieChart success={bottomTech.successCount} inProgress={bottomTech.inProgressCount} late={bottomTech.lateCount} size="lg" />
+            <h3 className="font-black text-gray-900 dark:text-slate-100 text-xl mb-6 text-center border-b pb-2 px-4 border-gray-100 dark:border-slate-700/50">👨‍🔧 {tech.name}</h3>
+            <PurePieChart success={tech.successCount} inProgress={tech.inProgressCount} late={tech.lateCount} size="lg" />
           </div>
           <div className="flex flex-col gap-4 text-sm font-bold bg-gray-50 dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-700/50 w-full max-w-md">
-            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="text-gray-500 dark:text-slate-400 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> ใบงานที่สำเร็จ:</span><span className="font-black text-emerald-600 text-xl">{bottomTech.successCount} งาน</span></div>
-            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="text-gray-500 dark:text-slate-400 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500"></span> กำลังดำเนินการซ่อม:</span><span className="font-black text-amber-500 text-xl">{bottomTech.inProgressCount} งาน</span></div>
-            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="text-gray-500 dark:text-slate-400 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-rose-500"></span> ตรวจพบงานล่าช้า:</span><span className="font-black text-rose-600 text-xl">{bottomTech.lateCount} งาน</span></div>
-            <div className="flex justify-between items-center pt-2"><span className="text-gray-800 dark:text-slate-200 font-black text-base">ประสิทธิภาพบุคคล (SLA):</span><span className={`px-4 py-1.5 rounded-lg font-mono font-black text-lg shadow-sm bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400`}>{bottomTech.efficiencyRate}%</span></div>
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="text-gray-500 dark:text-slate-400 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500"></span> ใบงานที่สำเร็จ:</span><span className="font-black text-emerald-600 text-xl">{tech.successCount} งาน</span></div>
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="text-gray-500 dark:text-slate-400 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500"></span> กำลังดำเนินการซ่อม:</span><span className="font-black text-amber-500 text-xl">{tech.inProgressCount} งาน</span></div>
+            <div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-slate-700"><span className="text-gray-500 dark:text-slate-400 font-bold flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-rose-500"></span> ตรวจพบงานล่าช้า:</span><span className="font-black text-rose-600 text-xl">{tech.lateCount} งาน</span></div>
+            <div className="flex justify-between items-center pt-2"><span className="text-gray-800 dark:text-slate-200 font-black text-base">ประสิทธิภาพบุคคล (SLA):</span><span className={`px-4 py-1.5 rounded-lg font-mono font-black text-lg shadow-sm bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400`}>{tech.efficiencyRate}%</span></div>
           </div>
         </div>
 
