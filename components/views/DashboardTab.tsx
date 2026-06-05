@@ -21,7 +21,10 @@ export default function DashboardTab({
   handleLogClick,
   currentPage,
   setCurrentPage,
-  DASHBOARD_ITEMS_PER_PAGE
+  DASHBOARD_ITEMS_PER_PAGE,
+  dateRange,
+  customDateStart,
+  customDateEnd
 }: {
   stats: import('../../lib/types').DashboardStatsData;
   searchInput: string;
@@ -38,8 +41,19 @@ export default function DashboardTab({
   currentPage: number;
   setCurrentPage: (p: number) => void;
   DASHBOARD_ITEMS_PER_PAGE: number;
+  dateRange?: string;
+  customDateStart?: string;
+  customDateEnd?: string;
 }) {
   const { t } = useLanguage();
+  
+  let dateRangeText = "";
+  if (dateRange === '7d') dateRangeText = "7 วันล่าสุด";
+  else if (dateRange === '30d') dateRangeText = "30 วันล่าสุด";
+  else if (dateRange === '6m') dateRangeText = "6 เดือนล่าสุด";
+  else if (dateRange === '1y') dateRangeText = "1 ปีล่าสุด";
+  else if (dateRange === 'all') dateRangeText = "ทั้งหมด";
+  else if (dateRange === 'custom') dateRangeText = `ตั้งแต่ ${customDateStart || '-'} ถึง ${customDateEnd || '-'}`;
   const maxCount = Math.max(...(stats.monthlyStats?.map((m: any) => m.count) || [0]), 1);
   const maxCost = Math.max(...(stats.monthlyStats?.map((m: any) => m.cost) || [0]), 1);
   
@@ -59,6 +73,15 @@ export default function DashboardTab({
         <DashboardSearchBar value={searchInput} onChange={setSearchInput} onSearch={executeSearch} />
         <div className="w-full sm:w-auto flex-shrink-0"><ImportButton /></div>
       </div>
+
+      {dateRangeText && (
+        <div className="flex items-center gap-2 px-1">
+          <svg className="w-4 h-4 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
+            แสดงข้อมูล: <span className="text-[#0B603A] font-bold dark:text-emerald-400">{dateRangeText}</span>
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-[#0B603A]">

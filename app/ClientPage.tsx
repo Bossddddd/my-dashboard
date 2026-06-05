@@ -315,6 +315,9 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
           PriorityBadge={PriorityBadge}
           formatDateTime={formatDateTime}
           slaTarget={parseInt(slaTarget)}
+          dateRange={dateRange}
+          customDateStart={customDateStart}
+          customDateEnd={customDateEnd}
         />
       );
     }
