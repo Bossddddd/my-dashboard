@@ -7,11 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "db:push:dev": "cross-env ENV_FILE=.env.development drizzle-kit push",
+    "db:push:prod": "cross-env ENV_FILE=.env.production drizzle-kit push",
+    "db:generate:dev": "cross-env ENV_FILE=.env.development drizzle-kit generate",
+    "db:generate:prod": "cross-env ENV_FILE=.env.production drizzle-kit generate",
+    "db:studio:dev": "cross-env ENV_FILE=.env.development drizzle-kit studio",
+    "db:studio:prod": "cross-env ENV_FILE=.env.production drizzle-kit studio"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.3",
+    "@neondatabase/serverless": "^1.1.0",
+    "@sentry/nextjs": "^10.56.0",
     "@vercel/speed-insights": "^2.0.0",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -20,14 +28,17 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
-    "prisma": "^6.19.3",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }
