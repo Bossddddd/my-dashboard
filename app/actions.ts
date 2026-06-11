@@ -111,8 +111,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       priorityGroupsRaw,
       costAggRes,
       recentLogs,
-      allLogs,
-      overdueLogs
+      allLogs
     ] = await Promise.all([
       db.select({ count: count() }).from(vehicles),
       query,
