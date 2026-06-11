@@ -1,12 +1,16 @@
 // @ts-nocheck
 import { useLanguage } from '../../app/LanguageContext';
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import DashboardSearchBar from "../DashboardSearchBar";
 import ImportButton from "../ImportButton";
+import ExportButton from "../ExportButton";
+import { BulkPrintView } from "../BulkPrintView";
 import { StatusBadge, PriorityBadge } from "../badges";
 import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
 import Pagination from '../Pagination';
+import toast from "react-hot-toast";
+import { getAllLogsForExport } from "../../app/actions";
 
 export default function DashboardTab({
   stats,
@@ -46,6 +50,10 @@ export default function DashboardTab({
   customDateEnd?: string;
 }) {
   const { t } = useLanguage();
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [printData, setPrintData] = useState<any[]>([]);
+  const printRef = useRef<HTMLDivElement>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
   
   let dateRangeText = "";
   if (dateRange === '7d') dateRangeText = "7 วันล่าสุด";
@@ -55,7 +63,6 @@ export default function DashboardTab({
   else if (dateRange === 'all') dateRangeText = "ทั้งหมด";
   else if (dateRange === 'custom') dateRangeText = `ตั้งแต่ ${customDateStart || '-'} ถึง ${customDateEnd || '-'}`;
   const maxCount = Math.max(...(stats.monthlyStats?.map((m: any) => m.count) || [0]), 1);
-  const maxCost = Math.max(...(stats.monthlyStats?.map((m: any) => m.cost) || [0]), 1);
   
   let overdueList = stats.overdueTasks || [];
   if (globalStatusFilter !== "all") overdueList = overdueList.filter((t: any) => t.status === globalStatusFilter);
@@ -67,11 +74,64 @@ export default function DashboardTab({
   const startIndex = (currentPage - 1) * DASHBOARD_ITEMS_PER_PAGE;
   const currentOverdueTasks = overdueList.slice(startIndex, startIndex + DASHBOARD_ITEMS_PER_PAGE);
 
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(new Set(currentOverdueTasks.map((t: any) => t.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectRow = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) newSelected.delete(id);
+    else newSelected.add(id);
+    setSelectedIds(newSelected);
+  };
+
+  const handlePrintSelected = async () => {
+    setIsPrinting(true);
+    const toastId = toast.loading("กำลังเตรียมหน้าพิมพ์...");
+    try {
+      const data = await getAllLogsForExport(selectedIds.size > 0 ? Array.from(selectedIds) : []);
+      setPrintData(data);
+      setTimeout(() => {
+        window.print();
+        toast.success("พร้อมพิมพ์", { id: toastId });
+        setIsPrinting(false);
+      }, 500);
+    } catch (e) {
+      toast.error("เกิดข้อผิดพลาด", { id: toastId });
+      setIsPrinting(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6 relative">
+      <BulkPrintView ref={printRef} data={printData} />
       <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <DashboardSearchBar value={searchInput} onChange={setSearchInput} onSearch={executeSearch} />
-        <div className="w-full sm:w-auto flex-shrink-0"><ImportButton /></div>
+        <div className="w-full sm:w-auto flex flex-wrap gap-2 flex-shrink-0 items-center">
+          {selectedIds.size > 0 && (
+            <div className="flex gap-2 items-center bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-100">
+              <span className="text-xs font-bold text-emerald-700">เลือก {selectedIds.size} รายการ:</span>
+              <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded shadow-sm text-xs font-bold border border-gray-200 flex items-center gap-1">
+                🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์"}
+              </button>
+              <ExportButton selectedIds={Array.from(selectedIds)} fileNamePrefix="สรุปภาพรวมแดชบอร์ด" />
+            </div>
+          )}
+          {selectedIds.size === 0 && (
+            <div className="flex gap-2 items-center">
+              <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg shadow-sm text-sm font-bold border border-gray-200 flex items-center gap-2">
+                🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์ทั้งหมด"}
+              </button>
+              <ExportButton fileNamePrefix="สรุปภาพรวมแดชบอร์ด" />
+            </div>
+          )}
+          <ImportButton />
+        </div>
       </div>
 
       {dateRangeText && (
@@ -83,7 +143,7 @@ export default function DashboardTab({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-[#0B603A]">
           <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">{t('totalVehicles')}</div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B603A]">{stats.totalVehicles} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">{t('vehiclesUnit')}</span></div>
@@ -91,10 +151,6 @@ export default function DashboardTab({
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-amber-500">
           <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">{t('totalLogs')}</div>
           <div className="text-2xl sm:text-3xl font-black text-amber-600">{stats.totalLogs} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">{t('logsUnit')}</span></div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm border-t-4 border-t-emerald-600">
-          <div className="text-gray-400 dark:text-slate-500 text-xs font-bold mb-1">{t('totalCost')}</div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-600">{stats.totalCost?.toLocaleString('th-TH')} <span className="text-xs sm:text-sm font-normal text-gray-400 dark:text-slate-500">{t('currency')}</span></div>
         </div>
       </div>
 
@@ -131,7 +187,7 @@ export default function DashboardTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
           <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-6">📈 จำนวนใบแจ้งซ่อมแยกรายเดือน (6 เดือนล่าสุด)</h3>
           <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 dark:border-slate-700 pb-2 px-2">
@@ -141,21 +197,6 @@ export default function DashboardTab({
                 <div key={idx} className="flex flex-1 flex-col items-center h-full justify-end group">
                   <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded mb-1 whitespace-nowrap">{item.count} งาน</span>
                   <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t-sm bg-blue-500 hover:bg-blue-600 transition-all group-hover:scale-x-105"></div>
-                  <span className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-full font-medium mt-2">{item.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200 mb-6">💰 ยอดค่าใช้จ่ายรวมสุทธิรายเดือน (6 เดือนล่าสุด)</h3>
-          <div className="flex h-48 items-end justify-between gap-2 border-b border-gray-200 dark:border-slate-700 pb-2 px-2">
-            {stats.monthlyStats?.map((item: any, idx: number) => {
-              const heightPercent = (item.cost / maxCost) * 100;
-              return (
-                <div key={idx} className="flex flex-1 flex-col items-center h-full justify-end group">
-                  <span className="text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded mb-1 truncate max-w-[120%]">{item.cost.toLocaleString()} ฿</span>
-                  <div style={{ height: `${Math.max(heightPercent, 6)}%` }} className="w-full rounded-t-sm bg-emerald-500 hover:bg-emerald-600 transition-all group-hover:scale-x-105"></div>
                   <span className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-full font-medium mt-2">{item.label}</span>
                 </div>
               );
@@ -190,15 +231,45 @@ export default function DashboardTab({
       </div>
 
       {totalOverdueItems > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-rose-200 dark:border-rose-800 overflow-hidden">
-          <div className="p-3 sm:p-4 border-b border-rose-100 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-900/30/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <h3 className="font-bold text-sm sm:text-base text-rose-700 dark:text-rose-400 flex items-center gap-2">🚨 รายการแจ้งซ่อมที่เกินกำหนด ({totalOverdueItems} รายการ)</h3>
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 font-bold hidden sm:block">* คลิกหัวตารางเพื่อจัดเรียงลำดับ</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h3 className="font-black text-sm sm:text-base text-gray-800 dark:text-slate-200 flex items-center gap-2 shrink-0">
+              <span className="text-rose-500">🔥</span> 
+              รายการแจ้งซ่อมที่เกินกำหนด SLA ({overdueList.length})
+            </h3>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              <p className="text-[11px] text-gray-400 dark:text-slate-500 font-bold hidden lg:block">* คลิกหัวตารางเพื่อจัดเรียงข้อมูล หรือคลิกแถวเพื่อดูข้อมูลเชิงลึก</p>
+              {selectedIds.size > 0 && (
+                <div className="flex gap-2 items-center bg-rose-50 dark:bg-rose-900/30 px-3 py-1.5 rounded-lg border border-rose-100">
+                  <span className="text-xs font-bold text-rose-700">เลือก {selectedIds.size} รายการ:</span>
+                  <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded shadow-sm text-xs font-bold border border-gray-200 flex items-center gap-1">
+                    🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์"}
+                  </button>
+                  <ExportButton selectedIds={Array.from(selectedIds)} fileNamePrefix="รายการใบงานเกินกำหนด_SLA" />
+                </div>
+              )}
+              {selectedIds.size === 0 && (
+                <div className="flex gap-2 items-center">
+                  <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded shadow-sm text-xs font-bold border border-gray-200 flex items-center gap-1">
+                    🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์ทั้งหมด"}
+                  </button>
+                  <ExportButton fileNamePrefix="รายการใบงานเกินกำหนด_SLA" />
+                </div>
+              )}
+            </div>
           </div>
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left table-auto text-[11px] sm:text-sm min-w-[1000px]">
               <thead className="text-gray-600 dark:text-slate-400 bg-rose-50 dark:bg-rose-900/30/20 text-[10px] sm:text-xs uppercase border-b border-rose-100 dark:border-rose-800/50">
                 <tr>
+                  <th className="w-10 p-2 sm:px-4 sm:py-3 text-center">
+                    <input type="checkbox" 
+                      className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" 
+                      onChange={handleSelectAll}
+                      checked={currentOverdueTasks.length > 0 && currentOverdueTasks.every((t: any) => selectedIds.has(t.id))}
+                    />
+                  </th>
                   <th className="w-16 p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">ลำดับ</th>
                   <th onClick={() => handleSort("plate")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-rose-100/50 whitespace-nowrap">ทะเบียนรถ {sortField === "plate" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">รายละเอียด / อาการ</th>
@@ -209,7 +280,14 @@ export default function DashboardTab({
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white dark:bg-slate-800">
                 {currentOverdueTasks.map((task: any, idx: number) => (
-                  <tr key={task.id} onClick={() => handleLogClick && handleLogClick(task)} className="hover:bg-rose-50 dark:bg-rose-900/30/40 cursor-pointer transition-colors">
+                  <tr key={task.id} onClick={() => handleLogClick && handleLogClick(task)} className={`hover:bg-rose-50 dark:bg-rose-900/30/40 cursor-pointer transition-colors ${selectedIds.has(task.id) ? "bg-rose-50/80 dark:bg-rose-900/40" : ""}`}>
+                    <td className="p-2 sm:px-4 sm:py-3 text-center" onClick={(e) => handleSelectRow(e, task.id)}>
+                      <input type="checkbox" 
+                        className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" 
+                        checked={selectedIds.has(task.id)}
+                        readOnly
+                      />
+                    </td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-400 dark:text-slate-500 align-top whitespace-nowrap">{startIndex + idx + 1}</td>
                     <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{task.plate || "-"}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{task.description}</div></td>

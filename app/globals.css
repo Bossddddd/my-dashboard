@@ -23,3 +23,35 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  body > :not(#bulk-print-view) {
+    display: none !important;
+  }
+  #bulk-print-view, #bulk-print-view * {
+    visibility: visible;
+  }
+  #bulk-print-view {
+    position: static !important;
+    display: block !important;
+    width: 100%;
+  }
+  .print-page {
+    page-break-after: always;
+    break-after: page;
+  }
+  .print-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}

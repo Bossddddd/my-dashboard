@@ -40,7 +40,7 @@ export default function DashboardSearchResults({
         <div className="text-5xl mb-3">🔍</div>
         <h2 className="text-lg font-bold text-gray-800 dark:text-slate-200">ไม่พบข้อมูลที่ค้นหา</h2>
         <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
-          ไม่พบ <span className="font-bold text-gray-800 dark:text-slate-200">"{searchInput}"</span> ในทะเบียนรถ ช่าง อู่ หรือใบแจ้งซ่อม
+          ไม่พบ <span className="font-bold text-gray-800 dark:text-slate-200">"{searchInput}"</span> ในทะเบียนรถ ช่าง ทีมช่าง หรือใบแจ้งซ่อม
         </p>
         <button onClick={onReset} className="mt-4 text-xs bg-gray-100 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 font-bold px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
           กลับหน้าหลัก
@@ -63,7 +63,7 @@ export default function DashboardSearchResults({
           <p className="text-sm text-gray-500 dark:text-slate-400 font-bold mt-1">{results.total} รายการที่ตรงกัน</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-black">
-          <span className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50">อู่ {results.workshops.length}</span>
+          <span className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/50">ทีมช่าง {results.workshops.length}</span>
           <span className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 border border-blue-100 dark:border-blue-800/50">ช่าง {results.technicians.length}</span>
           <span className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 border border-amber-100">ใบแจ้งซ่อม {results.logs.length}</span>
         </div>
@@ -72,7 +72,7 @@ export default function DashboardSearchResults({
       {results.workshops.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700/50">
-            <h3 className="font-black text-sm text-gray-800 dark:text-slate-200">🏢 อู่/ศูนย์ซ่อม</h3>
+            <h3 className="font-black text-sm text-gray-800 dark:text-slate-200">🏢 ทีมช่าง/ศูนย์ซ่อม</h3>
           </div>
           <div className="divide-y divide-gray-100">
             {results.workshops.map((workshop: any, idx: number) => (
@@ -126,7 +126,7 @@ export default function DashboardSearchResults({
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 dark:text-slate-400 font-bold mt-3">
                   <span>ทะเบียน: <span className="text-gray-800 dark:text-slate-200">{log.vehiclePlate || "-"}</span></span>
                   <span>ช่าง: <span className="text-gray-800 dark:text-slate-200">{log.technicianName || "-"}</span></span>
-                  <span>อู่: <span className="text-gray-800 dark:text-slate-200">{log.workshopName || "-"}</span></span>
+                  <span>ทีมช่าง: <span className="text-gray-800 dark:text-slate-200">{log.workshopName || "-"}</span></span>
                   <span>กำหนดเสร็จ: <span className="text-rose-600">{renderDateTime(log.dueDate)}</span></span>
                 </div>
               </button>

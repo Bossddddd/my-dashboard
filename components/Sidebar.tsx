@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { useLanguage } from "../app/LanguageContext";
 
 interface SidebarProps {
-  activeTab: 'dashboard' | 'workshops' | 'technicians' | 'settings'; // 🚀 เพิ่มสถานะ technicians และ settings
-  setActiveTab: (tab: 'dashboard' | 'workshops' | 'technicians' | 'settings') => void;
+  activeTab: 'dashboard' | 'teams' | 'technicians' | 'map' | 'settings';
+  setActiveTab: (tab: 'dashboard' | 'teams' | 'technicians' | 'map' | 'settings') => void;
 }
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
@@ -47,12 +47,12 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 {t('maintenanceDashboard')}
               </div>
               <div 
-                onClick={() => setActiveTab('workshops')}
+                onClick={() => setActiveTab('teams')}
                 className={`px-3 py-2 text-sm font-bold rounded-lg border-l-4 cursor-pointer transition-all ${
-                  activeTab === 'workshops' ? 'text-[#0B603A] bg-emerald-50 dark:bg-emerald-900/30 border-[#0B603A]' : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:text-slate-200 hover:bg-gray-50 dark:bg-slate-900 border-transparent'
+                  activeTab === 'teams' ? 'text-[#0B603A] bg-emerald-50 dark:bg-emerald-900/30 border-[#0B603A]' : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:text-slate-200 hover:bg-gray-50 dark:bg-slate-900 border-transparent'
                 }`}
               >
-                {t('workshops')}
+                {t('teams')}
               </div>
               {/* 🚀 เมนูใหม่: ทีมช่างและประสิทธิภาพ */}
               <div 
@@ -62,6 +62,15 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 }`}
               >
                 {t('technicians')}
+              </div>
+              {/* 🚀 เมนูใหม่: แผนที่พิกัดซ่อม */}
+              <div 
+                onClick={() => setActiveTab('map')}
+                className={`px-3 py-2 text-sm font-bold rounded-lg border-l-4 cursor-pointer transition-all ${
+                  activeTab === 'map' ? 'text-[#0B603A] bg-emerald-50 dark:bg-emerald-900/30 border-[#0B603A]' : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:text-slate-200 hover:bg-gray-50 dark:bg-slate-900 border-transparent'
+                }`}
+              >
+                🗺️ แผนที่รวม
               </div>
             </div>
           )}

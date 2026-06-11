@@ -3,7 +3,10 @@ export interface MaintenanceLog {
   maintenanceLogId?: number;
   vehiclePlate?: string;
   technicianName?: string;
-  workshopName?: string;
+  teamName?: string;
+  locationLabel?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   priority: string; 
   status: string;   
   description: string;
@@ -30,7 +33,7 @@ export interface TechnicianStat {
   logs: MaintenanceLog[];
 }
 
-export interface WorkshopStat {
+export interface TeamStat {
   name: string;
   logs?: MaintenanceLog[];
   avgRepairHours?: number;
@@ -47,7 +50,7 @@ export interface DashboardStatsData {
   successCount: number;
   inProgressCount: number;
   lateCount: number;
-  workshopsData: WorkshopStat[];
+  teamsData: TeamStat[];
   overallEfficiency: number;
   totalVehicles?: number;
   totalLogs?: number;
@@ -61,7 +64,7 @@ export interface DashboardStatsData {
 
 export interface DashboardSearchResults {
   query: string;
-  workshops: WorkshopStat[];
+  teams: TeamStat[];
   technicians: TechnicianStat[];
   logs: MaintenanceLog[];
   total: number;

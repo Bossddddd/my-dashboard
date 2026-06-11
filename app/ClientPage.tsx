@@ -10,8 +10,9 @@ import { sortedArray } from "../lib/utils";
 
 import LogDetailModal from "../components/LogDetailModal";
 import DashboardTab from "../components/views/DashboardTab";
-import WorkshopsTab from "../components/views/WorkshopsTab";
+import TeamsTab from "../components/views/TeamsTab";
 import TechniciansTab from "../components/views/TechniciansTab";
+import MapTab from "../components/views/MapTab";
 import VehicleDetailView from '@/components/views/VehicleDetailView';
 import ImportButton from '@/components/ImportButton';
 import SettingsTab from "../components/views/SettingsTab";
@@ -27,7 +28,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
   const [searchInput, setSearchInput] = useState("");
   const [dashboardSearchResults, setDashboardSearchResults] = useState<DashboardSearchResults | null | undefined>(undefined);
   
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'workshops' | 'technicians' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'teams' | 'technicians' | 'map' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Close sidebar by default on mobile screens
@@ -37,9 +38,9 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     }
   }, []);
   
-  const [selectedWorkshopDetail, setSelectedWorkshopDetail] = useState<any | null>(null);
+  const [selectedteamDetail, setSelectedteamDetail] = useState<any | null>(null);
   const [selectedTechnicianDetail, setSelectedTechnicianDetail] = useState<any | null>(null);
-  const [selectedWorkshop, setSelectedWorkshop] = useState("all");
+  const [selectedteam, setSelectedteam] = useState("all");
   
   const [activeLogModal, setActiveLogModal] = useState<any | null>(null);
 
@@ -53,7 +54,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
 
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTechPage, setCurrentTechPage] = useState(1);
-  const [currentWorkshopLogPage, setCurrentWorkshopLogPage] = useState(1);
+  const [currentteamLogPage, setCurrentteamLogPage] = useState(1);
   const [currentTechLogPage, setCurrentTechLogPage] = useState(1);
 
   // Global Settings State
@@ -120,31 +121,31 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     setDashboardSearchResults(undefined);
   };
 
-  const handleTabChange = (tab: 'dashboard' | 'workshops' | 'technicians' | 'settings') => {
+  const handleTabChange = (tab: 'dashboard' | 'teams' | 'technicians' | 'settings') => {
     setActiveTab(tab);
     setVehicleData(undefined);
     setDashboardSearchResults(undefined);
-    setSelectedWorkshopDetail(null);
+    setSelectedteamDetail(null);
     setSelectedTechnicianDetail(null);
     if (window.innerWidth < 640) {
       setIsSidebarOpen(false);
     }
   };
 
-  const openWorkshopDetail = (workshop: any) => {
+  const openteamDetail = (team: any) => {
     setVehicleData(undefined);
     setDashboardSearchResults(undefined);
     setSelectedTechnicianDetail(null);
-    setSelectedWorkshopDetail(workshop);
-    setCurrentWorkshopLogPage(1);
-    setActiveTab('workshops');
+    setSelectedteamDetail(team);
+    setCurrentteamLogPage(1);
+    setActiveTab('teams');
     if (window.innerWidth < 640) setIsSidebarOpen(false);
   };
 
   const openTechnicianDetail = (technician: any) => {
     setVehicleData(undefined);
     setDashboardSearchResults(undefined);
-    setSelectedWorkshopDetail(null);
+    setSelectedteamDetail(null);
     setSelectedTechnicianDetail(technician);
     setCurrentTechLogPage(1);
     setActiveTab('technicians');
@@ -206,22 +207,22 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     if (type === 'status') setGlobalStatusFilter(value);
     if (type === 'priority') setGlobalPriorityFilter(value);
     setCurrentPage(1);
-    setCurrentWorkshopLogPage(1);
+    setCurrentteamLogPage(1);
     setCurrentTechLogPage(1);
   };
 
-  const processedWorkshops = useMemo(() => {
-    if (!stats?.workshopsData) return [];
-    return sortedArray(stats.workshopsData, sortField, sortDirection);
+  const processedteams = useMemo(() => {
+    if (!stats?.teamsData) return [];
+    return sortedArray(stats.teamsData, sortField, sortDirection);
   }, [stats, sortField, sortDirection]);
 
   const techsData = useMemo(() => {
-    if (!stats?.workshopsData) return { list: [], top: [], bottom: [], total: 0 };
+    if (!stats?.teamsData) return { list: [], top: [], bottom: [], total: 0 };
 
     let allTechsArray: any[] = [];
-    if (selectedWorkshop === "all") {
+    if (selectedteam === "all") {
       const allTechsMap = new Map();
-      stats.workshopsData.forEach((w: any) => {
+      stats.teamsData.forEach((w: any) => {
         w.technicians?.forEach((t: any) => {
           if (!allTechsMap.has(t.name)) {
             allTechsMap.set(t.name, { ...t, logs: t.logs ? [...t.logs] : [] });
@@ -239,7 +240,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
       });
       allTechsArray = Array.from(allTechsMap.values());
     } else {
-      const wData = stats.workshopsData.find((w: any) => w.name === selectedWorkshop);
+      const wData = stats.teamsData.find((w: any) => w.name === selectedteam);
       allTechsArray = wData?.technicians || [];
     }
 
@@ -252,15 +253,15 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     }
 
     return { list: finalTechList, top: sortedByEff.slice(0, 3), bottom: sortedByWorst.slice(0, 3), total: allTechsArray.length };
-  }, [stats, selectedWorkshop, sortField, sortDirection]);
+  }, [stats, selectedteam, sortField, sortDirection]);
 
-  const workshopSums = useMemo(() => {
-    if (!stats?.workshopsData) return { sumSuccess: 0, sumInProgress: 0, sumLate: 0, totalWorkshops: 0 };
+  const teamSums = useMemo(() => {
+    if (!stats?.teamsData) return { sumSuccess: 0, sumInProgress: 0, sumLate: 0, totalteams: 0 };
     return {
-      totalWorkshops: stats.workshopsData.length,
-      sumSuccess: stats.workshopsData.reduce((acc: number, cur: any) => acc + cur.successCount, 0),
-      sumInProgress: stats.workshopsData.reduce((acc: number, cur: any) => acc + cur.inProgressCount, 0),
-      sumLate: stats.workshopsData.reduce((acc: number, cur: any) => acc + cur.lateCount, 0),
+      totalteams: stats.teamsData.length,
+      sumSuccess: stats.teamsData.reduce((acc: number, cur: any) => acc + cur.successCount, 0),
+      sumInProgress: stats.teamsData.reduce((acc: number, cur: any) => acc + cur.inProgressCount, 0),
+      sumLate: stats.teamsData.reduce((acc: number, cur: any) => acc + cur.lateCount, 0),
     };
   }, [stats]);
 
@@ -275,7 +276,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
           searchInput={searchInput}
           itemsLimit={DASHBOARD_ITEMS_PER_PAGE}
           onReset={resetSearchView}
-          onOpenWorkshop={openWorkshopDetail}
+          onOpenteam={openteamDetail}
           onOpenTechnician={openTechnicianDetail}
           onOpenLog={setActiveLogModal}
           renderPriorityBadge={(p: string) => <PriorityBadge priority={p} />}
@@ -322,13 +323,13 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
       );
     }
 
-    if (activeTab === 'workshops') {
+    if (activeTab === 'teams') {
       return (
-        <WorkshopsTab 
-          selectedWorkshopDetail={selectedWorkshopDetail}
-          setSelectedWorkshopDetail={setSelectedWorkshopDetail}
-          currentWorkshopLogPage={currentWorkshopLogPage}
-          setCurrentWorkshopLogPage={setCurrentWorkshopLogPage}
+        <TeamsTab 
+          selectedteamDetail={selectedteamDetail}
+          setSelectedteamDetail={setSelectedteamDetail}
+          currentteamLogPage={currentteamLogPage}
+          setCurrentteamLogPage={setCurrentteamLogPage}
           globalStatusFilter={globalStatusFilter}
           globalPriorityFilter={globalPriorityFilter}
           setMakeFilterValue={setMakeFilterValue}
@@ -338,8 +339,8 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
           setActiveLogModal={setActiveLogModal}
           GENERAL_ITEMS_PER_PAGE={GENERAL_ITEMS_PER_PAGE}
           stats={stats}
-          workshopSums={workshopSums}
-          processedWorkshops={processedWorkshops}
+          teamSums={teamSums}
+          processedteams={processedteams}
           slaTarget={parseInt(slaTarget)}
         />
       );
@@ -350,8 +351,8 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
         <TechniciansTab
           stats={stats}
           techsData={techsData}
-          selectedWorkshop={selectedWorkshop}
-          setSelectedWorkshop={setSelectedWorkshop}
+          selectedteam={selectedteam}
+          setSelectedteam={setSelectedteam}
           selectedTechnicianDetail={selectedTechnicianDetail}
           setSelectedTechnicianDetail={setSelectedTechnicianDetail}
           globalStatusFilter={globalStatusFilter}
@@ -370,6 +371,15 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
           currentTechPage={currentTechPage}
           setCurrentTechPage={setCurrentTechPage}
           slaTarget={parseInt(slaTarget)}
+        />
+      );
+    }
+
+    if (activeTab === 'map') {
+      return (
+        <MapTab 
+          mapLogs={stats?.mapLogs || []} 
+          setActiveLogModal={setActiveLogModal} 
         />
       );
     }
@@ -404,7 +414,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
               </div>
               <div className="h-5 sm:h-6 w-px bg-gray-300 mx-1 hidden sm:block"></div>
               <h1 className="text-xs sm:text-base font-black text-[#0B603A] truncate max-w-[150px] sm:max-w-none">
-                {vehicleData !== undefined ? getTranslation(language, 'historyLog') : selectedWorkshopDetail ? `${getTranslation(language, 'workshopTitle')} ${selectedWorkshopDetail.name}` : selectedTechnicianDetail ? `${getTranslation(language, 'technicianTitle')} ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? getTranslation(language, 'maintenanceDashboard') : activeTab === 'workshops' ? getTranslation(language, 'workshops') : activeTab === 'technicians' ? getTranslation(language, 'technicians') : getTranslation(language, 'settings')}
+                {vehicleData !== undefined ? getTranslation(language, 'historyLog') : selectedteamDetail ? `${getTranslation(language, 'teamTitle')} ${selectedteamDetail.name}` : selectedTechnicianDetail ? `${getTranslation(language, 'technicianTitle')} ${selectedTechnicianDetail.name}` : activeTab === 'dashboard' ? getTranslation(language, 'maintenanceDashboard') : activeTab === 'teams' ? getTranslation(language, 'teams') : activeTab === 'technicians' ? getTranslation(language, 'technicians') : activeTab === 'map' ? 'แผนที่รวม' : getTranslation(language, 'settings')}
               </h1>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">

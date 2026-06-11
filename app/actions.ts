@@ -15,6 +15,43 @@ const calculateSlaRate = (onTimeCount: number, lateCount: number) => {
   return slaTotal > 0 ? (onTimeCount / slaTotal) * 100 : 0;
 };
 
+export async function getAllLogsForExport(selectedIds?: number[]) {
+  try {
+    const conditions = selectedIds && selectedIds.length > 0 
+      ? inArray(maintenanceLogs.id, selectedIds) 
+      : undefined;
+
+    const data = await db.query.maintenanceLogs.findMany({
+      where: conditions,
+      columns: {
+        id: true,
+        status: true,
+        priority: true,
+        description: true,
+        technicianName: true,
+        reportedAt: true,
+        assignedAt: true,
+        startedAt: true,
+        completedAt: true,
+        dueDate: true,
+        teamName: true,
+        cost: true,
+        latitude: true,
+        longitude: true,
+        locationLabel: true,
+      },
+      with: {
+        vehicle: { columns: { plate: true } }
+      },
+      orderBy: [desc(maintenanceLogs.reportedAt)]
+    });
+    return data;
+  } catch (error) {
+    console.error("Database Error:", error);
+    return [];
+  }
+}
+
 export async function searchVehicleByPlate(plate: string) {
   try {
     const v = await db.query.vehicles.findFirst({
@@ -48,38 +85,71 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
 
     const whereClause = dateFilter;
 
-    const totalVehiclesRes = await db.select({ count: count() }).from(vehicles);
-    const totalVehicles = totalVehiclesRes[0]?.count || 0;
-    
     const query = db.select({ count: count() }).from(maintenanceLogs);
     if (whereClause) query.where(whereClause);
-    const totalLogsRes = await query;
-    const totalLogs = totalLogsRes[0]?.count || 0;
-
+    
     const statusQuery = db.select({ status: maintenanceLogs.status, count: count(maintenanceLogs.id) }).from(maintenanceLogs);
     if (whereClause) statusQuery.where(whereClause);
-    const statusGroupsRaw = await statusQuery.groupBy(maintenanceLogs.status);
-    const statusGroups = statusGroupsRaw.map(s => ({ _count: { id: s.count }, status: s.status }));
-
+    
     const priorityQuery = db.select({ priority: maintenanceLogs.priority, count: count(maintenanceLogs.id) }).from(maintenanceLogs);
     if (whereClause) priorityQuery.where(whereClause);
-    const priorityGroupsRaw = await priorityQuery.groupBy(maintenanceLogs.priority);
-    const priorityGroups = priorityGroupsRaw.map(p => ({ _count: { id: p.count }, priority: p.priority }));
-
+    
     const costQuery = db.select({ sumCost: sum(maintenanceLogs.cost) }).from(maintenanceLogs);
     if (whereClause) costQuery.where(whereClause);
-    const costAggRes = await costQuery;
-    const costAgg = { _sum: { cost: costAggRes[0]?.sumCost ? parseFloat(costAggRes[0].sumCost) : 0 } };
 
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const recentLogs = await db.query.maintenanceLogs.findMany({
-      where: gte(maintenanceLogs.reportedAt, sixMonthsAgo),
-      columns: { reportedAt: true, cost: true }
-    });
+    const now = new Date();
+
+    const [
+      totalVehiclesRes,
+      totalLogsRes,
+      statusGroupsRaw,
+      priorityGroupsRaw,
+      costAggRes,
+      recentLogs,
+      allLogs,
+      overdueLogs
+    ] = await Promise.all([
+      db.select({ count: count() }).from(vehicles),
+      query,
+      statusQuery.groupBy(maintenanceLogs.status),
+      priorityQuery.groupBy(maintenanceLogs.priority),
+      costQuery,
+      db.query.maintenanceLogs.findMany({
+        where: gte(maintenanceLogs.reportedAt, sixMonthsAgo),
+        columns: { reportedAt: true, cost: true }
+      }),
+      db.query.maintenanceLogs.findMany({
+        where: whereClause,
+        columns: { 
+          id: true, status: true, priority: true, description: true, technicianName: true,
+          reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, teamName: true,
+          latitude: true, longitude: true, locationLabel: true
+        },
+        with: { vehicle: { columns: { plate: true } } }
+      }),
+      db.query.maintenanceLogs.findMany({
+        where: and(
+          notInArray(maintenanceLogs.status, ['completed', 'cancelled']),
+          lt(maintenanceLogs.dueDate, now)
+        ),
+        columns: {
+          id: true, description: true, technicianName: true, status: true, priority: true, dueDate: true, teamName: true, reportedAt: true, latitude: true, longitude: true, locationLabel: true
+        },
+        with: { vehicle: { columns: { plate: true } } },
+        orderBy: [asc(maintenanceLogs.dueDate)]
+      })
+    ]);
+
+    const totalVehicles = totalVehiclesRes[0]?.count || 0;
+    const totalLogs = totalLogsRes[0]?.count || 0;
+    const statusGroups = statusGroupsRaw.map(s => ({ _count: { id: s.count }, status: s.status }));
+    const priorityGroups = priorityGroupsRaw.map(p => ({ _count: { id: p.count }, priority: p.priority }));
+    const costAgg = { _sum: { cost: costAggRes[0]?.sumCost ? parseFloat(costAggRes[0].sumCost) : 0 } };
 
     const monthlyMap = new Map();
     for (let i = 0; i < 6; i++) {
@@ -104,14 +174,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     }
     const monthlyStats = Array.from(monthlyMap.values()).reverse();
 
-    const allLogs = await db.query.maintenanceLogs.findMany({
-      where: whereClause,
-      columns: { 
-        id: true, status: true, priority: true, description: true, technicianName: true,
-        reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, workshopName: true,
-      },
-      with: { vehicle: { columns: { plate: true } } }
-    });
+    // Removed allLogs fetch from here as it's now in Promise.all
 
     let totalCompleted = 0;
     let onTimeCompleted = 0;
@@ -122,8 +185,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     let overdueActiveCount = 0;
     
     const overdueTasks = [];
-    const workshopMap = new Map(); 
-    const now = new Date();
+    const teamMap = new Map();
 
     for (const log of allLogs) {
       if (log.status === 'completed' && log.completedAt) {
@@ -140,17 +202,17 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
         if (diff >= 0) { totalRepairTimeMs += diff; repairCount++; }
       }
-      const rawWorkshop = log.workshopName ? log.workshopName.trim() : "";
-      if (rawWorkshop !== "") {
-        if (!workshopMap.has(rawWorkshop)) {
-          workshopMap.set(rawWorkshop, {
-            name: rawWorkshop, totalJobs: 0, completedOnTime: 0, completedLate: 0, 
+      const rawTeam = log.teamName ? log.teamName.trim() : "";
+      if (rawTeam !== "") {
+        if (!teamMap.has(rawTeam)) {
+          teamMap.set(rawTeam, {
+            name: rawTeam, totalJobs: 0, completedOnTime: 0, completedLate: 0, 
             inProgress: 0, overdueActive: 0, totalRepairTimeMs: 0, repairCount: 0,
             techsMap: new Map(),
             logs: [] 
           });
         }
-        const wStats = workshopMap.get(rawWorkshop);
+        const wStats = teamMap.get(rawTeam);
         wStats.totalJobs++;
 
         const logDataForList = {
@@ -158,11 +220,14 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
           description: log.description,
           technicianName: log.technicianName || "ยังไม่ระบุ",
-          workshopName: log.workshopName || "ไม่ระบุ",
+          teamName: log.teamName || "ไม่ระบุ",
           status: log.status,
           priority: log.priority,
           reportedAt: log.reportedAt ? log.reportedAt.toISOString() : "",
-          dueDate: log.dueDate ? log.dueDate.toISOString() : ""
+          dueDate: log.dueDate ? log.dueDate.toISOString() : "",
+          latitude: log.latitude,
+          longitude: log.longitude,
+          locationLabel: log.locationLabel
         };
 
         wStats.logs.push(logDataForList);
@@ -220,32 +285,23 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       avgRepairTimeHours: repairCount > 0 ? Math.round((totalRepairTimeMs / repairCount) / (1000 * 60 * 60) * 10) / 10 : 0,
     };
 
-    const overdueLogs = await db.query.maintenanceLogs.findMany({
-      where: and(
-        notInArray(maintenanceLogs.status, ['completed', 'cancelled']),
-        lt(maintenanceLogs.dueDate, now)
-      ),
-      columns: {
-        id: true, description: true, technicianName: true, status: true, priority: true, dueDate: true, workshopName: true, reportedAt: true,
-      },
-      with: { vehicle: { columns: { plate: true } } },
-      orderBy: [asc(maintenanceLogs.dueDate)]
-    });
+    // Removed overdueLogs fetch from here as it's now in Promise.all
 
     overdueActiveCount = overdueLogs.length;
     for (const log of overdueLogs) {
       overdueTasks.push({
         id: log.id, plate: log.vehicle?.plate, description: log.description,
         technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate,
-        workshopName: log.workshopName,
-        reportedAt: log.reportedAt ? log.reportedAt.toISOString() : ""
+        teamName: log.teamName,
+        reportedAt: log.reportedAt ? log.reportedAt.toISOString() : "",
+        latitude: log.latitude, longitude: log.longitude, locationLabel: log.locationLabel
       });
     }
 
     const completedLateCount = totalCompleted - onTimeCompleted;
     const onTimeRate = calculateSlaRate(onTimeCompleted, completedLateCount + overdueActiveCount);
 
-    const workshopsData = Array.from(workshopMap.values()).map((w: any) => {
+    const teamsData = Array.from(teamMap.values()).map((w: any) => {
       const lateCount = w.completedLate + w.overdueActive;
       const efficiencyRate = calculateSlaRate(w.completedOnTime, lateCount);
       const avgRepairHoursW = w.repairCount > 0 ? (w.totalRepairTimeMs / (1000 * 60 * 60)) / w.repairCount : 0;
@@ -270,6 +326,24 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
     const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
 
+    const mapLogs = allLogs
+      .filter((log: any) => log.latitude != null && log.longitude != null)
+      .map((log: any) => ({
+        id: log.id,
+        maintenanceLogId: log.id,
+        vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
+        description: log.description,
+        status: log.status,
+        priority: log.priority,
+        latitude: log.latitude,
+        longitude: log.longitude,
+        locationLabel: log.locationLabel,
+        reportedAt: log.reportedAt ? log.reportedAt.toISOString() : "",
+        dueDate: log.dueDate ? log.dueDate.toISOString() : "",
+        teamName: log.teamName,
+        technicianName: log.technicianName
+      }));
+
     return {
       totalVehicles, totalLogs,
       statusCounts: statusGroups.map((s: any) => ({ status: s.status, count: s._count.id })),
@@ -282,7 +356,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         avgRepairHours: Math.round(avgRepairHours * 10) / 10,
         overdueActiveCount
       },
-      overdueTasks, workshopsData
+      overdueTasks, teamsData, mapLogs
     };
   } catch (error) {
     console.error("Stats Error:", error);
@@ -341,7 +415,7 @@ export async function importMaintenanceData(rows: any[]) {
         vehicleId: vehicleId,
         projectId: row.projectId ? parseInt(row.projectId) : null,
         projectName: row.projectName ? String(row.projectName).trim() : null,
-        workshopName: row.workshopName ? String(row.workshopName).trim() : null,
+        teamName: row.teamName ? String(row.teamName).trim() : null,
         technicianName: row.technicianName ? String(row.technicianName).trim() : null,
         priority: row.priority ? String(row.priority).trim() : "normal",
         status: row.status ? String(row.status).trim() : "reported",
@@ -349,6 +423,8 @@ export async function importMaintenanceData(rows: any[]) {
         description: String(row.description).trim(),
         symptoms: row.symptoms ? String(row.symptoms).trim() : null,
         locationLabel: row.locationLabel ? String(row.locationLabel).trim() : null,
+        latitude: row.latitude ? parseFloat(row.latitude) : null,
+        longitude: row.longitude ? parseFloat(row.longitude) : null,
         cost: row.cost ? parseFloat(row.cost) : null,
         reportedAt: parseSafeDate(row.reportedAt) || new Date(),
         assignedAt: parseSafeDate(row.assignedAt),
@@ -378,7 +454,7 @@ export async function searchDashboardData(query: string) {
       ilike(vehicles.plate, `%${searchTerm}%`),
       ilike(maintenanceLogs.description, `%${searchTerm}%`),
       ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
-      ilike(maintenanceLogs.workshopName, `%${searchTerm}%`)
+      ilike(maintenanceLogs.teamName, `%${searchTerm}%`)
     ];
 
     const parsedId = parseInt(searchTerm, 10);
@@ -391,7 +467,7 @@ export async function searchDashboardData(query: string) {
         const conditions = [
           ilike(maintenanceLogs.description, `%${searchTerm}%`),
           ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
-          ilike(maintenanceLogs.workshopName, `%${searchTerm}%`)
+          ilike(maintenanceLogs.teamName, `%${searchTerm}%`)
         ];
         if (!isNaN(parsedId)) conditions.push(eq(maintenanceLogs.id, parsedId));
         // Wait, filtering by vehicle plate needs a join. Drizzle's findMany doesn't easily let us filter by relations yet
@@ -410,7 +486,7 @@ export async function searchDashboardData(query: string) {
         ilike(vehicles.plate, `%${searchTerm}%`),
         ilike(maintenanceLogs.description, `%${searchTerm}%`),
         ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
-        ilike(maintenanceLogs.workshopName, `%${searchTerm}%`),
+        ilike(maintenanceLogs.teamName, `%${searchTerm}%`),
         !isNaN(parsedId) ? eq(maintenanceLogs.id, parsedId) : undefined
       ))
       .orderBy(desc(maintenanceLogs.reportedAt));
@@ -432,22 +508,22 @@ export async function searchDashboardData(query: string) {
       vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
       description: log.description,
       technicianName: log.technicianName || "ไม่ระบุ",
-      workshopName: log.workshopName || "ไม่ระบุ",
+      teamName: log.teamName || "ไม่ระบุ",
       status: log.status,
       priority: log.priority,
       reportedAt: log.reportedAt ? log.reportedAt.toISOString() : null,
       dueDate: log.dueDate ? log.dueDate.toISOString() : null,
     }));
 
-    const workshopMap = new Map();
+    const teamMap = new Map();
     const technicianMap = new Map();
 
     formattedLogs.forEach(log => {
-      if (log.workshopName !== "ไม่ระบุ") {
-        if (!workshopMap.has(log.workshopName)) {
-          workshopMap.set(log.workshopName, { name: log.workshopName, totalJobs: 0, successCount: 0, lateCount: 0, efficiencyRate: 100 });
+      if (log.teamName !== "ไม่ระบุ") {
+        if (!teamMap.has(log.teamName)) {
+          teamMap.set(log.teamName, { name: log.teamName, totalJobs: 0, successCount: 0, lateCount: 0, efficiencyRate: 100 });
         }
-        workshopMap.get(log.workshopName).totalJobs++;
+        teamMap.get(log.teamName).totalJobs++;
       }
       if (log.technicianName !== "ไม่ระบุ") {
         if (!technicianMap.has(log.technicianName)) {
@@ -459,7 +535,7 @@ export async function searchDashboardData(query: string) {
 
     return {
       query: searchTerm,
-      workshops: Array.from(workshopMap.values()),
+      Teams: Array.from(teamMap.values()),
       technicians: Array.from(technicianMap.values()),
       logs: formattedLogs,
       total: formattedLogs.length

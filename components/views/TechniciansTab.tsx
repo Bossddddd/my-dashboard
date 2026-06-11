@@ -6,6 +6,10 @@ import { StatusBadge, PriorityBadge } from "../badges";
 import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
 import Pagination from '../Pagination';
+import ExportButton from "../ExportButton";
+import { BulkPrintView } from "../BulkPrintView";
+import toast from "react-hot-toast";
+import { getAllLogsForExport } from "../../app/actions";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../../lib/constants";
 
 export default function TechniciansTab({
@@ -54,6 +58,10 @@ export default function TechniciansTab({
   formatDateTime: (d: string) => string;
 }) {
   const { t } = useLanguage();
+  const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
+  const [printData, setPrintData] = React.useState<any[]>([]);
+  const printRef = React.useRef<HTMLDivElement>(null);
+  const [isPrinting, setIsPrinting] = React.useState(false);
   if (selectedTechnicianDetail) {
     const tech = selectedTechnicianDetail;
     
@@ -66,6 +74,39 @@ export default function TechniciansTab({
     const logTotalPages = Math.max(1, Math.ceil(totalTechLogs / GENERAL_ITEMS_PER_PAGE));
     const logStartIndex = (currentTechLogPage - 1) * GENERAL_ITEMS_PER_PAGE;
     const currentLogs = logList.slice(logStartIndex, logStartIndex + GENERAL_ITEMS_PER_PAGE);
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.checked) {
+        setSelectedIds(new Set(currentLogs.map((l: any) => l.maintenanceLogId || l.id)));
+      } else {
+        setSelectedIds(new Set());
+      }
+    };
+
+    const handleSelectRow = (e: React.MouseEvent, id: number) => {
+      e.stopPropagation();
+      const newSelected = new Set(selectedIds);
+      if (newSelected.has(id)) newSelected.delete(id);
+      else newSelected.add(id);
+      setSelectedIds(newSelected);
+    };
+
+    const handlePrintSelected = async () => {
+    setIsPrinting(true);
+    const toastId = toast.loading("กำลังเตรียมหน้าพิมพ์...");
+    try {
+      const data = await getAllLogsForExport(selectedIds.size > 0 ? Array.from(selectedIds) : []);
+      setPrintData(data);
+      setTimeout(() => {
+        window.print();
+        toast.success("พร้อมพิมพ์", { id: toastId });
+        setIsPrinting(false);
+      }, 500);
+      } catch (e) {
+        toast.error("เกิดข้อผิดพลาด", { id: toastId });
+        setIsPrinting(false);
+      }
+    };
 
     return (
       <div className="flex flex-col gap-6">
@@ -87,10 +128,28 @@ export default function TechniciansTab({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700/50 flex flex-wrap justify-between items-center gap-4">
-            <h3 className="font-bold text-sm sm:text-base text-gray-800 dark:text-slate-200">📋 รายการประวัติใบงานทั้งหมดภายใต้ความรับผิดชอบ ({totalTechLogs} รายการ)</h3>
-            <div className="flex gap-2">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden relative">
+          <BulkPrintView ref={printRef} data={printData} />
+          <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h3 className="font-bold text-sm sm:text-base text-gray-800 dark:text-slate-200">📋 รายการประวัติใบงานซ่อมของช่างนี้ ({totalTechLogs} รายการ)</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedIds.size > 0 && (
+                <div className="flex gap-2 items-center bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg border border-blue-100">
+                  <span className="text-xs font-bold text-blue-700">เลือก {selectedIds.size} รายการ:</span>
+                  <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded shadow-sm text-xs font-bold border border-gray-200 flex items-center gap-1">
+                    🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์"}
+                  </button>
+                  <ExportButton selectedIds={Array.from(selectedIds)} fileNamePrefix={`สรุปผลงานช่าง_${tech.name}`} />
+                </div>
+              )}
+              {selectedIds.size === 0 && (
+                <div className="flex gap-2 items-center">
+                  <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded shadow-sm text-xs font-bold border border-gray-200 flex items-center gap-1">
+                    🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์ทั้งหมด"}
+                  </button>
+                  <ExportButton fileNamePrefix={`สรุปผลงานช่าง_${tech.name}`} />
+                </div>
+              )}
               <select value={globalStatusFilter} onChange={(e) => setMakeFilterValue('status', e.target.value)} className="text-xs bg-white dark:bg-slate-800 border p-1.5 rounded font-bold text-gray-600 dark:text-slate-400">
                 <option value="all">{t('allStatus')}</option>
                 {Object.keys(STATUS_CONFIG).map(k => <option key={k} value={k}>{STATUS_CONFIG[k].text}</option>)}
@@ -105,25 +164,42 @@ export default function TechniciansTab({
             <table className="w-full text-left table-auto text-[11px] sm:text-sm min-w-[1000px]">
               <thead className="bg-gray-50 dark:bg-slate-900 text-gray-600 dark:text-slate-400 text-[10px] sm:text-xs uppercase border-b border-gray-200 dark:border-slate-700">
                 <tr>
+                  <th className="w-10 p-2 sm:px-4 sm:py-3 text-center">
+                    <input type="checkbox" 
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer w-4 h-4" 
+                      onChange={handleSelectAll}
+                      checked={currentLogs.length > 0 && currentLogs.every((t: any) => selectedIds.has(t.maintenanceLogId || t.id))}
+                    />
+                  </th>
                   <th onClick={() => handleSort("vehiclePlate")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ทะเบียนรถ {sortField === "vehiclePlate" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th className="p-2 sm:px-4 sm:py-3 font-bold whitespace-nowrap">{t('descCol')}</th>
-                  <th onClick={() => handleSort("workshopName")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">อู่/ศูนย์บริการ {sortField === "workshopName" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
+                  <th onClick={() => handleSort("workshopName")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ทีมช่าง/ศูนย์บริการ {sortField === "workshopName" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("priority")} className="p-2 sm:px-4 sm:py-3 font-bold text-center cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">ความเร่งด่วน {sortField === "priority" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("status")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">สถานะ {sortField === "status" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                   <th onClick={() => handleSort("dueDate")} className="p-2 sm:px-4 sm:py-3 font-bold cursor-pointer hover:bg-gray-100 dark:bg-slate-800/50 whitespace-nowrap">กำหนดเสร็จ {sortField === "dueDate" ? (sortDirection === "asc" ? "▲" : "▼") : ""}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white dark:bg-slate-800">
-                {currentLogs.map((log: import('../../lib/types').MaintenanceLog, idx: number) => (
-                  <tr key={idx} onClick={() => handleLogClick(log)} className="hover:bg-emerald-50 dark:bg-emerald-900/30/30 cursor-pointer transition-colors">
-                    <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{log.vehiclePlate}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div></td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-gray-800 dark:text-slate-200 font-bold align-top whitespace-nowrap">{log.workshopName}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap"><PriorityBadge priority={log.priority} /></td>
-                    <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={log.status} /></td>
-                    <td className="p-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
-                  </tr>
-                ))}
+                {currentLogs.map((log: import('../../lib/types').MaintenanceLog, idx: number) => {
+                  const logId = log.maintenanceLogId || log.id;
+                  return (
+                    <tr key={idx} onClick={() => handleLogClick && handleLogClick(log)} className={`hover:bg-blue-50 dark:bg-blue-900/30/30 cursor-pointer transition-colors ${selectedIds.has(logId as number) ? "bg-blue-50/80 dark:bg-blue-900/40" : ""}`}>
+                      <td className="p-2 sm:px-4 sm:py-3 text-center" onClick={(e) => { if(logId !== undefined) handleSelectRow(e, logId as number); }}>
+                        <input type="checkbox" 
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer w-4 h-4" 
+                          checked={selectedIds.has(logId as number)}
+                          readOnly
+                        />
+                      </td>
+                      <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{log.vehiclePlate}</td>
+                      <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{log.description}</div></td>
+                      <td className="p-2 sm:px-4 sm:py-3 text-gray-800 dark:text-slate-200 font-bold align-top whitespace-nowrap">{log.workshopName}</td>
+                      <td className="p-2 sm:px-4 sm:py-3 text-center align-top whitespace-nowrap"><PriorityBadge priority={log.priority} /></td>
+                      <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={log.status} /></td>
+                      <td className="p-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 font-bold align-top text-[10px] sm:text-sm whitespace-nowrap">{formatDateTime(log.dueDate)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -143,14 +219,14 @@ export default function TechniciansTab({
         <div className="flex flex-col gap-1 sm:gap-2 w-full sm:w-80 shrink-0">
           <label className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400">{t('selectWorkshopLabel')}</label>
           <select value={selectedWorkshop} onChange={(e) => { setSelectedWorkshop(e.target.value); setCurrentTechPage(1); }} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-300 dark:border-slate-600 rounded-lg py-2.5 px-3 text-sm sm:text-base font-bold text-[#0B603A]">
-            <option value="all">🌐 แสดงช่างทั้งหมดทุกอู่รวมกัน</option>
+            <option value="all">🌐 แสดงช่างทั้งหมดทุกทีมช่างรวมกัน</option>
             {stats.workshopsData?.map((w: any, i: number) => <option key={i} value={w.name}>{w.name}</option>)}
           </select>
         </div>
         <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl py-3 px-6 text-center w-full sm:w-auto flex items-center justify-center gap-4">
           <span className="text-3xl sm:text-4xl shrink-0">👨‍💻</span>
           <div className="text-left">
-            <span className="text-[11px] sm:text-sm text-gray-600 dark:text-slate-400 font-bold block mb-0.5">{selectedWorkshop === "all" ? "ช่างทั้งหมด" : "ช่างประจำอู่นี้"}</span>
+            <span className="text-[11px] sm:text-sm text-gray-600 dark:text-slate-400 font-bold block mb-0.5">{selectedWorkshop === "all" ? "ช่างทั้งหมด" : "ช่างประจำทีมช่างนี้"}</span>
             <span className="text-2xl sm:text-3xl font-black text-[#0B603A] font-mono leading-none">{techsData.total} <span className="text-xs sm:text-sm font-bold text-gray-500 dark:text-slate-400">{t('techCountUnit')}</span></span>
           </div>
         </div>

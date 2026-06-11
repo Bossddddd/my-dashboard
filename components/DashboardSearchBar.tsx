@@ -12,7 +12,7 @@ export default function DashboardSearchBar({ value, onChange, onSearch }: Dashbo
       </svg>
       <input
         type="text"
-        placeholder="ค้นหาทะเบียนรถ, ช่าง, อู่, ใบแจ้งซ่อม"
+        placeholder="ค้นหาทะเบียนรถ, ช่าง, ทีมช่าง, ใบแจ้งซ่อม"
         className="w-full pl-10 pr-24 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder-gray-600 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0B603A]"
         value={value}
         onChange={(e) => onChange(e.target.value)}
