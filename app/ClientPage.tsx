@@ -124,7 +124,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     return data;
   };
 
-  const { data: stats, mutate: loadStats, isLoading } = useSWR(
+  const { data: stats, mutate: loadStats, isLoading: isSwrLoading } = useSWR(
     { dateRange, customStart: customDateStart, customEnd: customDateEnd },
     fetcher,
     { fallbackData: processedStats, keepPreviousData: true, revalidateOnFocus: false }
