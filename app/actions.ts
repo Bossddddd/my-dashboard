@@ -291,8 +291,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           return {
             name: t.name, totalJobs: t.totalJobs, successCount: t.completedOnTime,
             inProgressCount: t.inProgress, lateCount: tLateCount,
-            efficiencyRate: Math.round(tEfficiency * 10) / 10,
-            logs: t.logs 
+            efficiencyRate: Math.round(tEfficiency * 10) / 10
           };
         })
       };
@@ -314,7 +313,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         overdueActiveCount
       },
       teamsData,
-      allLogs: allLogs.map((l: any) => ({ ...l, vehiclePlate: l.vehicle?.plate || "ไม่ระบุ", reportedAt: l.reportedAt?.toISOString(), assignedAt: l.assignedAt?.toISOString(), startedAt: l.startedAt?.toISOString(), completedAt: l.completedAt?.toISOString(), dueDate: l.dueDate?.toISOString() }))
+      allLogs: allLogs.map((l: any) => ({ ...l, vehiclePlate: l.vehicle?.plate || "ไม่ระบุ", reportedAt: l.reportedAt?.toISOString() || null, assignedAt: l.assignedAt?.toISOString() || null, startedAt: l.startedAt?.toISOString() || null, completedAt: l.completedAt?.toISOString() || null, dueDate: l.dueDate?.toISOString() || null }))
     };
   } catch (error) {
     console.error("Stats Error:", error);
