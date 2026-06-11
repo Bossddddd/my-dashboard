@@ -131,17 +131,6 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           latitude: true, longitude: true, locationLabel: true
         },
         with: { vehicle: { columns: { plate: true } } }
-      }),
-      db.query.maintenanceLogs.findMany({
-        where: and(
-          notInArray(maintenanceLogs.status, ['completed', 'cancelled']),
-          lt(maintenanceLogs.dueDate, now)
-        ),
-        columns: {
-          id: true, description: true, technicianName: true, status: true, priority: true, dueDate: true, teamName: true, reportedAt: true, latitude: true, longitude: true, locationLabel: true
-        },
-        with: { vehicle: { columns: { plate: true } } },
-        orderBy: [asc(maintenanceLogs.dueDate)]
       })
     ]);
 
@@ -174,17 +163,13 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     }
     const monthlyStats = Array.from(monthlyMap.values()).reverse();
 
-    // Removed allLogs fetch from here as it's now in Promise.all
-
     let totalCompleted = 0;
     let onTimeCompleted = 0;
     let totalResponseTimeMs = 0;
     let responseCount = 0;
     let totalRepairTimeMs = 0;
     let repairCount = 0;
-    let overdueActiveCount = 0;
     
-    const overdueTasks = [];
     const teamMap = new Map();
 
     for (const log of allLogs) {
@@ -254,14 +239,11 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         if (rawTech !== "") {
           if (!wStats.techsMap.has(rawTech)) {
             wStats.techsMap.set(rawTech, {
-              name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0,
-              logs: [] 
+              name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0
             });
           }
           const tStats = wStats.techsMap.get(rawTech);
           tStats.totalJobs++;
-          tStats.logs.push(logDataForList); 
-
           if (log.status === 'completed') {
             if (log.dueDate && log.completedAt) {
               if (new Date(log.completedAt) <= new Date(log.dueDate)) { tStats.completedOnTime++; }
@@ -285,17 +267,11 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       avgRepairTimeHours: repairCount > 0 ? Math.round((totalRepairTimeMs / repairCount) / (1000 * 60 * 60) * 10) / 10 : 0,
     };
 
-    // Removed overdueLogs fetch from here as it's now in Promise.all
-
-    overdueActiveCount = overdueLogs.length;
-    for (const log of overdueLogs) {
-      overdueTasks.push({
-        id: log.id, plate: log.vehicle?.plate, description: log.description,
-        technicianName: log.technicianName, status: log.status, priority: log.priority, dueDate: log.dueDate,
-        teamName: log.teamName,
-        reportedAt: log.reportedAt ? log.reportedAt.toISOString() : "",
-        latitude: log.latitude, longitude: log.longitude, locationLabel: log.locationLabel
-      });
+    let overdueActiveCount = 0;
+    for (const log of allLogs) {
+      if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now) {
+        overdueActiveCount++;
+      }
     }
 
     const completedLateCount = totalCompleted - onTimeCompleted;
@@ -326,24 +302,6 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
     const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
 
-    const mapLogs = allLogs
-      .filter((log: any) => log.latitude != null && log.longitude != null)
-      .map((log: any) => ({
-        id: log.id,
-        maintenanceLogId: log.id,
-        vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
-        description: log.description,
-        status: log.status,
-        priority: log.priority,
-        latitude: log.latitude,
-        longitude: log.longitude,
-        locationLabel: log.locationLabel,
-        reportedAt: log.reportedAt ? log.reportedAt.toISOString() : "",
-        dueDate: log.dueDate ? log.dueDate.toISOString() : "",
-        teamName: log.teamName,
-        technicianName: log.technicianName
-      }));
-
     return {
       totalVehicles, totalLogs,
       statusCounts: statusGroups.map((s: any) => ({ status: s.status, count: s._count.id })),
@@ -356,7 +314,8 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         avgRepairHours: Math.round(avgRepairHours * 10) / 10,
         overdueActiveCount
       },
-      overdueTasks, teamsData, mapLogs
+      teamsData,
+      allLogs: allLogs.map((l: any) => ({ ...l, vehiclePlate: l.vehicle?.plate || "ไม่ระบุ", reportedAt: l.reportedAt?.toISOString(), assignedAt: l.assignedAt?.toISOString(), startedAt: l.startedAt?.toISOString(), completedAt: l.completedAt?.toISOString(), dueDate: l.dueDate?.toISOString() }))
     };
   } catch (error) {
     console.error("Stats Error:", error);
@@ -450,36 +409,8 @@ export async function searchDashboardData(query: string) {
 
     const searchTerm = query.trim();
 
-    const searchConditions: any[] = [
-      ilike(vehicles.plate, `%${searchTerm}%`),
-      ilike(maintenanceLogs.description, `%${searchTerm}%`),
-      ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
-      ilike(maintenanceLogs.teamName, `%${searchTerm}%`)
-    ];
-
     const parsedId = parseInt(searchTerm, 10);
-    if (!isNaN(parsedId)) {
-      searchConditions.push(eq(maintenanceLogs.id, parsedId));
-    }
-
-    const logs = await db.query.maintenanceLogs.findMany({
-      where: (maintenanceLogs, { or, ilike, eq }) => {
-        const conditions = [
-          ilike(maintenanceLogs.description, `%${searchTerm}%`),
-          ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
-          ilike(maintenanceLogs.teamName, `%${searchTerm}%`)
-        ];
-        if (!isNaN(parsedId)) conditions.push(eq(maintenanceLogs.id, parsedId));
-        // Wait, filtering by vehicle plate needs a join. Drizzle's findMany doesn't easily let us filter by relations yet
-        // So we might need to use db.select for complex search, but let's stick to simple or here, or use db.select.
-        // I will use db.select to make it easier to search by vehicle plate.
-        return or(...conditions);
-      },
-      with: { vehicle: { columns: { plate: true } } },
-      orderBy: [desc(maintenanceLogs.reportedAt)]
-    });
-
-    // To handle vehicle plate search properly with Drizzle:
+    
     const plateLogsRaw = await db.select({ logId: maintenanceLogs.id }).from(maintenanceLogs)
       .leftJoin(vehicles, eq(maintenanceLogs.vehicleId, vehicles.id))
       .where(or(

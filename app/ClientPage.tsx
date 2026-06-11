@@ -24,11 +24,25 @@ import { getTranslation } from "@/lib/i18n";
 
 export default function Home({ initialStats, initialDateRange, initialCustomStart, initialCustomEnd }: any) {
   const [vehicleData, setVehicleData] = useState<VehicleRecord | null | undefined>(undefined);
-  const [stats, setStats] = useState<any>(initialStats);
   const [searchInput, setSearchInput] = useState("");
   const [dashboardSearchResults, setDashboardSearchResults] = useState<DashboardSearchResults | null | undefined>(undefined);
   
   const [activeTab, setActiveTab] = useState<'dashboard' | 'teams' | 'technicians' | 'map' | 'settings'>('dashboard');
+  
+  const processedStats = useMemo(() => {
+    if (!initialStats) return initialStats;
+    const s = { ...initialStats };
+    if (s.allLogs) {
+      const now = new Date();
+      s.overdueTasks = s.allLogs.filter((log: any) => 
+        log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now
+      );
+      s.mapLogs = s.allLogs.filter((log: any) => log.latitude != null && log.longitude != null);
+    }
+    return s;
+  }, [initialStats]);
+
+  const [stats, setStats] = useState(processedStats);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Close sidebar by default on mobile screens
@@ -43,6 +57,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
   const [selectedteam, setSelectedteam] = useState("all");
   
   const [activeLogModal, setActiveLogModal] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [globalStatusFilter, setGlobalStatusFilter] = useState("all");
   const [globalPriorityFilter, setGlobalPriorityFilter] = useState("all");
@@ -98,8 +113,25 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
   }, [isDarkMode, language, dateRange, customDateStart, customDateEnd, slaTarget]);
 
   const loadStats = async () => {
-    const data = await getDashboardStats({ dateRange, customStart: customDateStart, customEnd: customDateEnd });
-    if (data) setStats(data);
+    try {
+      setIsLoading(true);
+      const data = await getDashboardStats({ dateRange, customStart: customDateStart, customEnd: customDateEnd });
+      
+      if (data && data.allLogs) {
+        const now = new Date();
+        data.overdueTasks = data.allLogs.filter((log: any) => 
+          log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now
+        );
+        data.mapLogs = data.allLogs.filter((log: any) => log.latitude != null && log.longitude != null);
+      }
+      
+      setStats(data);
+      setDashboardSearchResults(undefined);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -224,8 +256,9 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
       const allTechsMap = new Map();
       stats.teamsData.forEach((w: any) => {
         w.technicians?.forEach((t: any) => {
+          const tLogs = w.logs ? w.logs.filter((l: any) => l.technicianName === t.name) : [];
           if (!allTechsMap.has(t.name)) {
-            allTechsMap.set(t.name, { ...t, logs: t.logs ? [...t.logs] : [] });
+            allTechsMap.set(t.name, { ...t, logs: [...tLogs] });
           } else {
             const existing = allTechsMap.get(t.name);
             existing.totalJobs += t.totalJobs;
@@ -234,14 +267,17 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
             existing.lateCount += t.lateCount;
             const tClosed = existing.successCount + existing.lateCount;
             existing.efficiencyRate = tClosed > 0 ? Math.round((existing.successCount / tClosed) * 1000) / 10 : 0;
-            existing.logs = [...(existing.logs || []), ...(t.logs || [])];
+            existing.logs = [...(existing.logs || []), ...tLogs];
           }
         });
       });
       allTechsArray = Array.from(allTechsMap.values());
     } else {
       const wData = stats.teamsData.find((w: any) => w.name === selectedteam);
-      allTechsArray = wData?.technicians || [];
+      allTechsArray = (wData?.technicians || []).map((t: any) => ({
+        ...t,
+        logs: wData?.logs ? wData.logs.filter((l: any) => l.technicianName === t.name) : []
+      }));
     }
 
     const sortedByEff = [...allTechsArray].sort((a, b) => b.efficiencyRate - a.efficiencyRate || b.successCount - a.successCount);
