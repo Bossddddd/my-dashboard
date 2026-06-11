@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { searchVehicleByPlate, getDashboardStats, searchDashboardData } from "./actions";
 import { VehicleRecord, DashboardSearchResults } from "../lib/types";
 import { sortedArray } from "../lib/utils";
+import useSWR from 'swr';
 
 import LogDetailModal from "../components/LogDetailModal";
 import DashboardTab from "../components/views/DashboardTab";
@@ -42,7 +43,6 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     return s;
   }, [initialStats]);
 
-  const [stats, setStats] = useState(processedStats);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Close sidebar by default on mobile screens
@@ -112,34 +112,23 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     }
   }, [isDarkMode, language, dateRange, customDateStart, customDateEnd, slaTarget]);
 
-  const loadStats = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getDashboardStats({ dateRange, customStart: customDateStart, customEnd: customDateEnd });
-      
-      if (data && data.allLogs) {
-        const now = new Date();
-        data.overdueTasks = data.allLogs.filter((log: any) => 
-          log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now
-        );
-        data.mapLogs = data.allLogs.filter((log: any) => log.latitude != null && log.longitude != null);
-      }
-      
-      setStats(data);
-      setDashboardSearchResults(undefined);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+  const fetcher = async (params: any) => {
+    const data = await getDashboardStats(params);
+    if (data && data.allLogs) {
+      const now = new Date();
+      data.overdueTasks = data.allLogs.filter((log: any) => 
+        log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now
+      );
+      data.mapLogs = data.allLogs.filter((log: any) => log.latitude != null && log.longitude != null);
     }
+    return data;
   };
 
-  useEffect(() => {
-    // Only fetch if date range is different from initial or we need fresh data
-    if (dateRange !== 'custom' || (customDateStart && customDateEnd)) {
-      loadStats();
-    }
-  }, [dateRange, customDateStart, customDateEnd]);
+  const { data: stats, mutate: loadStats, isLoading } = useSWR(
+    { dateRange, customStart: customDateStart, customEnd: customDateEnd },
+    fetcher,
+    { fallbackData: processedStats, keepPreviousData: true, revalidateOnFocus: false }
+  );
 
   useEffect(() => {
     setGlobalStatusFilter("all");
