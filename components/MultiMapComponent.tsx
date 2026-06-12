@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../lib/constants';
@@ -72,101 +71,50 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {logs.length > 500 ? (
-          <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
-            {logs.map((log) => {
-              if (!log.latitude || !log.longitude) return null;
-              
-              return (
-                <Marker 
-                  key={log.maintenanceLogId || log.id} 
-                  position={[log.latitude, log.longitude]} 
-                  icon={getMarkerIcon(log)}
-                >
-                  <Popup>
-                    <div className="flex flex-col gap-2 min-w-[200px]">
-                      <div className="border-b pb-2 mb-1">
-                        <span className="font-black text-sm">#{log.maintenanceLogId || log.id} {log.vehiclePlate}</span>
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{log.description}</p>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">สถานะ:</span>
-                        <span className="font-bold">{STATUS_CONFIG[log.status]?.text || log.status}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">ความเร่งด่วน:</span>
-                        <span className="font-bold">{PRIORITY_CONFIG[log.priority]?.text || log.priority}</span>
-                      </div>
+        {logs.map((log) => {
+          if (!log.latitude || !log.longitude) return null;
+          
+          return (
+            <Marker 
+              key={log.maintenanceLogId || log.id} 
+              position={[log.latitude, log.longitude]} 
+              icon={getMarkerIcon(log)}
+            >
+              <Popup>
+                <div className="flex flex-col gap-2 min-w-[200px]">
+                  <div className="border-b pb-2 mb-1">
+                    <span className="font-black text-sm">#{log.maintenanceLogId || log.id} {log.vehiclePlate}</span>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{log.description}</p>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">สถานะ:</span>
+                    <span className="font-bold">{STATUS_CONFIG[log.status]?.text || log.status}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">ความเร่งด่วน:</span>
+                    <span className="font-bold">{PRIORITY_CONFIG[log.priority]?.text || log.priority}</span>
+                  </div>
 
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">พิกัด:</span>
-                        <span className="font-mono">{log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}</span>
-                      </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500">พิกัด:</span>
+                    <span className="font-mono">{log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}</span>
+                  </div>
 
-                      {onMarkerClick && (
-                        <button 
-                          onClick={(e) => { e.preventDefault(); onMarkerClick(log); }}
-                          className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-xs transition-colors"
-                        >
-                          ดูรายละเอียดใบงาน
-                        </button>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MarkerClusterGroup>
-        ) : (
-          <>
-            {logs.map((log) => {
-              if (!log.latitude || !log.longitude) return null;
-              
-              return (
-                <Marker 
-                  key={log.maintenanceLogId || log.id} 
-                  position={[log.latitude, log.longitude]} 
-                  icon={getMarkerIcon(log)}
-                >
-                  <Popup>
-                    <div className="flex flex-col gap-2 min-w-[200px]">
-                      <div className="border-b pb-2 mb-1">
-                        <span className="font-black text-sm">#{log.maintenanceLogId || log.id} {log.vehiclePlate}</span>
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{log.description}</p>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">สถานะ:</span>
-                        <span className="font-bold">{STATUS_CONFIG[log.status]?.text || log.status}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">ความเร่งด่วน:</span>
-                        <span className="font-bold">{PRIORITY_CONFIG[log.priority]?.text || log.priority}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">พิกัด:</span>
-                        <span className="font-mono">{log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}</span>
-                      </div>
-
-                      {onMarkerClick && (
-                        <button 
-                          onClick={(e) => { e.preventDefault(); onMarkerClick(log); }}
-                          className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-xs transition-colors"
-                        >
-                          ดูรายละเอียดใบงาน
-                        </button>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </>
-        )}
+                  {onMarkerClick && (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); onMarkerClick(log); }}
+                      className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-xs transition-colors"
+                    >
+                      ดูรายละเอียดใบงาน
+                    </button>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

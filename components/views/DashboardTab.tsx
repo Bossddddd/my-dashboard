@@ -289,7 +289,7 @@ export default function DashboardTab({
                       />
                     </td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-400 dark:text-slate-500 align-top whitespace-nowrap">{startIndex + idx + 1}</td>
-                    <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{task.plate || "-"}</td>
+                    <td className="p-2 sm:px-4 sm:py-3 font-black text-gray-900 dark:text-slate-100 align-top whitespace-nowrap">{task.vehiclePlate || "-"}</td>
                     <td className="p-2 sm:px-4 sm:py-3 text-gray-600 dark:text-slate-400 align-top break-words min-w-[250px]"><div className="line-clamp-2 sm:line-clamp-3 leading-tight">{task.description}</div></td>
                     <td className="p-2 sm:px-4 sm:py-3 text-blue-600 font-bold align-top whitespace-nowrap">{task.technicianName || "-"}</td>
                     <td className="p-2 sm:px-4 sm:py-3 align-top whitespace-nowrap"><StatusBadge status={task.status} /></td>
