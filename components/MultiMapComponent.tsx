@@ -75,7 +75,7 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
         <MarkerClusterGroup 
           chunkedLoading 
           maxClusterRadius={50}
-          iconCreateFunction={(cluster) => {
+          iconCreateFunction={(cluster: any) => {
             const count = cluster.getChildCount();
             let size = 36;
             let bgColor = 'bg-emerald-500';
