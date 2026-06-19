@@ -40,15 +40,13 @@ const iconCache: Record<string, L.DivIcon> = {
 };
 
 function getMarkerIcon(log: any) {
-  // If it's overdue or high priority, show red
-  const isOverdue = log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < new Date();
-  if (isOverdue) return iconCache['red'];
-  
   if (log.status === 'completed') return iconCache['green'];
+  if (log.status === 'cancelled') return iconCache['gray'];
   if (log.status === 'in_progress') return iconCache['blue'];
-  if (log.priority === 'high' || log.priority === 'urgent') return iconCache['orange'];
+  if (log.status === 'pending_parts') return iconCache['orange'];
   
-  return iconCache['gray'];
+  // default for 'reported' or other unknown active statuses
+  return iconCache['red'];
 }
 
 export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[], onMarkerClick?: (log: any) => void }) {

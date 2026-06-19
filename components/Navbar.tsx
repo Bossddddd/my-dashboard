@@ -25,10 +25,13 @@ export default function Navbar({ onSearch }: NavbarProps) {
       {/* โลโก้ / ชื่อโปรเจกต์ (ปรับเป็นลิงก์เพื่อให้กดกลับหน้า Home ได้) */}
       <Link 
         href="/" 
-        className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors cursor-pointer"
+        className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-2"
         title="กลับหน้าหลัก"
       >
         Maintenance-Dashboard
+        <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+          DEV VERSION
+        </span>
       </Link>
       
       {/* พื้นที่ด้านขวา: ช่องค้นหา + ปุ่มนำเข้าไฟล์ */}

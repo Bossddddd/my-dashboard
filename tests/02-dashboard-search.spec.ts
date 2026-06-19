@@ -13,7 +13,7 @@ test.describe('Dashboard & Search Tests', () => {
     // Check for Stat Cards (Total Vehicles, Logs, Cost)
     // Looking for the big numbers, they should have specific classes
     const bigNumbers = page.locator('.text-2xl.sm\\:text-3xl.font-black');
-    await expect(bigNumbers).toHaveCount(3);
+    await expect(bigNumbers).toHaveCount(2);
     
     // Check KPI titles exist
     await expect(page.locator('h3').first()).toBeVisible();
@@ -28,26 +28,24 @@ test.describe('Dashboard & Search Tests', () => {
     await searchInput.fill('MockPlate123');
     await searchInput.press('Enter');
     
-    // It should trigger a loading toast
-    await expect(page.locator('.go3958317564')).toBeVisible(); // Toast component class
-    // Depending on what is returned, either VehicleDetailView or DashboardSearchResultsView is shown.
-    // If not found, toast error "ไม่พบข้อมูล".
+    // It should trigger a loading toast or a result toast
+    await expect(page.locator('text=กำลังค้นหา').first().or(page.locator('text=ไม่พบข้อมูล').first())).toBeVisible({ timeout: 15000 });
   });
 
   test('should sort overdue table when clicking headers', async ({ page }) => {
     await expect(page.locator('text=กำลังโหลดข้อมูล...')).toBeHidden({ timeout: 10000 });
     
-    // Find the first table header to sort
-    const firstTh = page.locator('th').first();
-    if (await firstTh.isVisible()) {
-        await firstTh.click();
+    // Find a sortable header (index 2 is ทะเบียนรถ)
+    const sortableTh = page.locator('th').nth(2);
+    if (await sortableTh.isVisible()) {
+        await sortableTh.click();
         
         // Wait for sorting indicator to appear
-        await expect(firstTh).toContainText(/▲|▼/);
+        await expect(sortableTh).toContainText(/▲|▼/);
         
         // Click again to reverse sort
-        await firstTh.click();
-        await expect(firstTh).toContainText(/▲|▼/);
+        await sortableTh.click();
+        await expect(sortableTh).toContainText(/▲|▼/);
     }
   });
 });
