@@ -24,6 +24,7 @@ export const maintenanceLogs = pgTable("MaintenanceLog", {
   technicianName: varchar("technicianName", { length: 255 }),
   category: varchar("category", { length: 255 }),
   locationLabel: varchar("locationLabel", { length: 255 }),
+  specialTools: text("specialTools"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   reportedAt: timestamp("reportedAt").defaultNow().notNull(),

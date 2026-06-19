@@ -127,7 +127,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         columns: { 
           id: true, status: true, priority: true, description: true, technicianName: true,
           reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, teamName: true,
-          latitude: true, longitude: true, locationLabel: true
+          latitude: true, longitude: true, locationLabel: true, specialTools: true
         },
         with: { vehicle: { columns: { plate: true } } }
       })
@@ -211,7 +211,8 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           dueDate: log.dueDate ? log.dueDate.toISOString() : "",
           latitude: log.latitude,
           longitude: log.longitude,
-          locationLabel: log.locationLabel
+          locationLabel: log.locationLabel,
+          specialTools: log.specialTools
         };
 
         wStats.logs.push(logDataForList);

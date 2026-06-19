@@ -40,6 +40,7 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
         technicianName: formData.technicianName,
         description: formData.description,
         cost: formData.cost ? parseFloat(formData.cost) : null,
+        specialTools: formData.specialTools || null,
       };
       
       const res = await updateMaintenanceLog(id, dataToSave);
@@ -69,6 +70,7 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
         "ความเร่งด่วน": PRIORITY_CONFIG[activeLogModal.priority]?.text || activeLogModal.priority,
         "ทีมช่าง (Team)": activeLogModal.teamName || activeLogModal.workshopName || "-",
         "ช่างผู้รับผิดชอบ": activeLogModal.technicianName || "-",
+        "เครื่องมือพิเศษ": activeLogModal.specialTools || "-",
         "รายละเอียด/อาการ": activeLogModal.description || "-",
         "ค่าใช้จ่าย (บาท)": activeLogModal.cost || 0,
         "เวลาแจ้งซ่อม": formatDateTime(activeLogModal.reportedAt || ''),
@@ -179,22 +181,47 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
           </div>
           
           {isEditing && (
-            <div>
-              <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">ค่าใช้จ่าย (Cost)</span>
-              <input 
-                type="number"
-                value={formData.cost || ''}
-                onChange={(e) => setFormData({...formData, cost: e.target.value})}
-                className="w-full text-xs font-bold p-1.5 border rounded"
-                placeholder="ระบุค่าใช้จ่าย"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">ค่าใช้จ่าย (Cost)</span>
+                <input 
+                  type="number"
+                  value={formData.cost || ''}
+                  onChange={(e) => setFormData({...formData, cost: e.target.value})}
+                  className="w-full text-xs font-bold p-1.5 border rounded"
+                  placeholder="ระบุค่าใช้จ่าย"
+                />
+              </div>
+              <div>
+                <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">เครื่องมือพิเศษ (Special Tools)</span>
+                <input 
+                  type="text"
+                  value={formData.specialTools || ''}
+                  onChange={(e) => setFormData({...formData, specialTools: e.target.value})}
+                  className="w-full text-xs font-bold p-1.5 border rounded"
+                  placeholder="เช่น เครนยก, เครื่องเชื่อม, ชุดตรวจเช็คพิเศษ"
+                />
+              </div>
             </div>
           )}
 
-          {!isEditing && activeLogModal.cost != null && (
-            <div>
-               <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">ค่าใช้จ่าย</span>
-               <p className="text-sm font-bold text-emerald-600">{activeLogModal.cost} บาท</p>
+          {!isEditing && (activeLogModal.cost != null || activeLogModal.specialTools) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {activeLogModal.cost != null && (
+                <div>
+                   <span className="text-gray-400 dark:text-slate-500 block font-bold text-[11px] mb-1">ค่าใช้จ่าย</span>
+                   <p className="text-sm font-bold text-emerald-600">{activeLogModal.cost} บาท</p>
+                </div>
+              )}
+              {activeLogModal.specialTools && (
+                <div>
+                   <span className="text-amber-500 dark:text-amber-400 block font-bold text-[11px] mb-1 flex items-center gap-1">
+                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                     เครื่องมือพิเศษที่ต้องใช้
+                   </span>
+                   <p className="text-sm font-bold text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 inline-block rounded">{activeLogModal.specialTools}</p>
+                </div>
+              )}
             </div>
           )}
           
