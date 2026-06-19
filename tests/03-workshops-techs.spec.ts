@@ -33,11 +33,11 @@ test.describe('Workshops & Technicians Tests', () => {
     const techTitle = page.locator('h3').first();
     await expect(techTitle).toBeVisible();
 
-    // Sort by efficiency
-    const firstTh = page.locator('th').first();
-    if (await firstTh.isVisible()) {
-        await firstTh.click();
-        await expect(firstTh).toContainText(/▲|▼/);
+    // Sort by efficiency (SLA column is at index 6)
+    const sortableTh = page.locator('th').nth(6);
+    if (await sortableTh.isVisible()) {
+        await sortableTh.click();
+        await expect(sortableTh).toContainText(/▲|▼/);
     }
   });
 });
