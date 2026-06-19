@@ -333,6 +333,9 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
           setGlobalStatusFilter={setGlobalStatusFilter}
           globalPriorityFilter={globalPriorityFilter}
           setGlobalPriorityFilter={setGlobalPriorityFilter}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          handleSort={handleSort}
           DASHBOARD_ITEMS_PER_PAGE={DASHBOARD_ITEMS_PER_PAGE}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}

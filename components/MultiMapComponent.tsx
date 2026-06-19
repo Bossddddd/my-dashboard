@@ -20,8 +20,24 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// Custom icons based on status
-const createCustomIcon = (color: string) => {
+// Custom icons based on status and urgency
+const createCustomIcon = (color: string, isUrgent: boolean = false) => {
+  if (isUrgent) {
+    return L.divIcon({
+      className: 'custom-div-icon',
+      html: `
+        <div class="relative flex h-6 w-6">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: ${color};"></span>
+          <span class="relative inline-flex rounded-full h-6 w-6 border-2 border-white shadow-lg" style="background-color: ${color}; box-shadow: 0 0 10px ${color};"></span>
+          <div class="absolute inset-0 flex items-center justify-center text-white font-black text-[10px]">!</div>
+        </div>
+      `,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      popupAnchor: [0, -12]
+    });
+  }
+
   return L.divIcon({
     className: 'custom-div-icon',
     html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
@@ -31,22 +47,22 @@ const createCustomIcon = (color: string) => {
   });
 };
 
-const iconCache: Record<string, L.DivIcon> = {
-  'red': createCustomIcon('#ef4444'),
-  'orange': createCustomIcon('#f97316'),
-  'green': createCustomIcon('#10b981'),
-  'blue': createCustomIcon('#3b82f6'),
-  'gray': createCustomIcon('#6b7280'),
-};
+const iconCache: Record<string, L.DivIcon> = {};
 
 function getMarkerIcon(log: any) {
-  if (log.status === 'completed') return iconCache['green'];
-  if (log.status === 'cancelled') return iconCache['gray'];
-  if (log.status === 'in_progress') return iconCache['blue'];
-  if (log.status === 'pending_parts') return iconCache['orange'];
+  const isUrgent = log.priority === 'urgent' || log.priority === 'high';
+  let color = '#ef4444'; // default red
+  if (log.status === 'completed') color = '#10b981';
+  if (log.status === 'cancelled') color = '#6b7280';
+  if (log.status === 'in_progress') color = '#3b82f6';
+  if (log.status === 'pending_parts') color = '#f97316';
   
-  // default for 'reported' or other unknown active statuses
-  return iconCache['red'];
+  const cacheKey = `${color}-${isUrgent}`;
+  if (!iconCache[cacheKey]) {
+    iconCache[cacheKey] = createCustomIcon(color, isUrgent);
+  }
+  
+  return iconCache[cacheKey];
 }
 
 export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[], onMarkerClick?: (log: any) => void }) {
