@@ -464,7 +464,14 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
             </main>
           </div>
 
-          <LogDetailModal activeLogModal={activeLogModal} onClose={() => setActiveLogModal(null)} />
+          <LogDetailModal 
+            activeLogModal={activeLogModal} 
+            onClose={() => setActiveLogModal(null)} 
+            onUpdate={(updatedLog: any) => {
+              loadStats();
+              setActiveLogModal(updatedLog);
+            }} 
+          />
         </div>
       </LanguageProvider>
   );

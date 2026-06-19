@@ -507,3 +507,28 @@ export async function resetDatabase() {
     return { success: false, error: "เกิดข้อผิดพลาดในการรีเซ็ตฐานข้อมูล" };
   }
 }
+
+export async function updateMaintenanceLog(id: number, data: any) {
+  try {
+    const { revalidatePath } = require('next/cache');
+    const updateData = { ...data };
+    
+    if (updateData.status === 'completed' && !updateData.completedAt) {
+      updateData.completedAt = new Date();
+    }
+    
+    if (updateData.dueDate && typeof updateData.dueDate === 'string') {
+      updateData.dueDate = parseSafeDate(updateData.dueDate);
+    }
+
+    await db.update(maintenanceLogs)
+      .set(updateData)
+      .where(eq(maintenanceLogs.id, id));
+      
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update log:", error);
+    return { success: false, error: "ไม่สามารถอัปเดตข้อมูลได้" };
+  }
+}

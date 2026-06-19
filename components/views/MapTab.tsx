@@ -16,7 +16,9 @@ export default function MapTab({
 }) {
   const { t } = useLanguage();
   
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(Object.keys(STATUS_CONFIG));
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
+    Object.keys(STATUS_CONFIG).filter(key => key !== 'completed' && key !== 'cancelled')
+  );
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>(Object.keys(PRIORITY_CONFIG));
   const [overdueOnly, setOverdueOnly] = useState<boolean>(false);
 
@@ -142,11 +144,11 @@ export default function MapTab({
       <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-2 overflow-hidden relative">
         {/* Legend */}
         <div className="absolute top-4 right-4 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm p-3 rounded-xl border shadow-lg text-xs font-bold space-y-2 pointer-events-none">
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500 border border-white"></div> งานเกินกำหนด</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></div> งานเสร็จสิ้น</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500 border border-white"></div> แจ้งซ่อม / แจ้งเหตุ</div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div> กำลังดำเนินการ</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500 border border-white"></div> งานเร่งด่วน</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-500 border border-white"></div> อื่นๆ</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500 border border-white"></div> รออะไหล่ / รอตัดสินใจ</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></div> งานเสร็จสิ้น</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-500 border border-white"></div> ยกเลิก</div>
         </div>
 
         {mapLogs.length === 0 ? (
