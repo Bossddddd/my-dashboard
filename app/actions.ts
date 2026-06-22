@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "../db/db";
+import { db } from "../lib/db";
 import { revalidatePath } from 'next/cache';
 import { vehicles, maintenanceLogs, maintenanceHistoryLogs } from "../db/schema";
 import { eq, desc, asc, and, or, gte, lte, count, sum, inArray, lt, ilike } from "drizzle-orm";
@@ -137,8 +137,8 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
 
     const totalVehicles = totalVehiclesRes[0]?.count || 0;
     const totalLogs = totalLogsRes[0]?.count || 0;
-    const statusGroups = statusGroupsRaw.map(s => ({ _count: { id: s.count }, status: s.status }));
-    const priorityGroups = priorityGroupsRaw.map(p => ({ _count: { id: p.count }, priority: p.priority }));
+    const statusGroups = statusGroupsRaw.map((s: any) => ({ _count: { id: s.count }, status: s.status }));
+    const priorityGroups = priorityGroupsRaw.map((p: any) => ({ _count: { id: p.count }, priority: p.priority }));
     const costAgg = { _sum: { cost: costAggRes[0]?.sumCost ? parseFloat(costAggRes[0].sumCost) : 0 } };
 
     const monthlyMap = new Map();
@@ -424,7 +424,7 @@ export async function searchDashboardData(query: string) {
       ))
       .orderBy(desc(maintenanceLogs.reportedAt));
       
-    const logIds = [...new Set(plateLogsRaw.map(l => l.logId))];
+    const logIds: number[] = [...new Set(plateLogsRaw.map((l: any) => l.logId as number))];
     
     let logsFull: any[] = [];
     if (logIds.length > 0) {
@@ -558,7 +558,7 @@ export async function getHistoryByLogId(logId: number) {
       where: eq(maintenanceHistoryLogs.maintenanceLogId, logId),
       orderBy: [desc(maintenanceHistoryLogs.editedAt)],
     });
-    return history.map(h => ({
+    return history.map((h: any) => ({
       ...h,
       editedAt: h.editedAt.toISOString(),
     }));
