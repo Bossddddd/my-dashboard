@@ -104,7 +104,7 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
       } else {
         toast.error(res.error || "บันทึกไม่สำเร็จ", { id: toastId });
       }
-    } catch (e) {
+    } catch {
       toast.error("เกิดข้อผิดพลาด", { id: toastId });
     } finally {
       setIsSaving(false);
@@ -132,7 +132,7 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
       XLSX.utils.book_append_sheet(workbook, worksheet, "Ticket Detail");
       XLSX.writeFile(workbook, `ticket_${activeLogModal.maintenanceLogId || activeLogModal.id}.xlsx`);
       toast.success("ส่งออก Excel สำเร็จ");
-    } catch (e) {
+    } catch {
       toast.error("เกิดข้อผิดพลาดในการส่งออก");
     }
   };

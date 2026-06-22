@@ -15,7 +15,6 @@ import TeamsTab from "../components/views/TeamsTab";
 import TechniciansTab from "../components/views/TechniciansTab";
 import MapTab from "../components/views/MapTab";
 import VehicleDetailView from '@/components/views/VehicleDetailView';
-import ImportButton from '@/components/ImportButton';
 import SettingsTab from "../components/views/SettingsTab";
 import DashboardSearchResultsView from "../components/DashboardSearchResults";
 import { StatusBadge, PriorityBadge } from "../components/badges";
@@ -58,8 +57,6 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
   const [selectedteam, setSelectedteam] = useState("all");
   
   const [activeLogModal, setActiveLogModal] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const [globalStatusFilter, setGlobalStatusFilter] = useState("all");
   const [globalPriorityFilter, setGlobalPriorityFilter] = useState("all");
   const [sortField, setSortField] = useState<string>("");
@@ -125,7 +122,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     return data;
   };
 
-  const { data: stats, mutate: loadStats, isLoading: isSwrLoading } = useSWR(
+  const { data: stats, mutate: loadStats } = useSWR(
     { dateRange, customStart: customDateStart, customEnd: customDateEnd },
     fetcher,
     { fallbackData: processedStats, keepPreviousData: true, revalidateOnFocus: false }

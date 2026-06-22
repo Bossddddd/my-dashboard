@@ -3,7 +3,7 @@
 import { db } from "../lib/db";
 import { revalidatePath } from 'next/cache';
 import { vehicles, maintenanceLogs, maintenanceHistoryLogs } from "../db/schema";
-import { eq, desc, asc, and, or, gte, lte, count, sum, inArray, lt, ilike } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, count, sum, inArray, ilike } from "drizzle-orm";
 import { headers } from "next/headers";
 
 const parseSafeDate = (val: any) => {
@@ -263,12 +263,6 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       }
     }
 
-    const efficiency = {
-      onTimeRate: totalCompleted > 0 ? Math.round((onTimeCompleted / totalCompleted) * 100) : 0,
-      avgResponseTimeHours: responseCount > 0 ? Math.round((totalResponseTimeMs / responseCount) / (1000 * 60 * 60) * 10) / 10 : 0,
-      avgRepairTimeHours: repairCount > 0 ? Math.round((totalRepairTimeMs / repairCount) / (1000 * 60 * 60) * 10) / 10 : 0,
-    };
-
     let overdueActiveCount = 0;
     for (const log of allLogs) {
       if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now) {
@@ -322,12 +316,6 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     console.error("Stats Error:", error);
     return null;
   }
-}
-
-function notInArray(column: any, values: string[]) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { not, inArray } = require("drizzle-orm");
-  return not(inArray(column, values));
 }
 
 export async function importMaintenanceData(rows: any[]) {
