@@ -2,8 +2,6 @@
 
 import { db } from "../db/db";
 import { revalidatePath } from 'next/cache';
-import { vehicles, maintenanceLogs } from "../db/schema";
-import { db } from "../lib/db";
 import { vehicles, maintenanceLogs, maintenanceHistoryLogs } from "../db/schema";
 import { eq, desc, asc, and, or, gte, lte, count, sum, inArray, lt, ilike } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -521,8 +519,6 @@ export async function updateMaintenanceLog(id: number, data: any, editedBy: stri
     const headersList = await headers();
     const forwardedFor = headersList.get('x-forwarded-for');
     const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : (headersList.get('x-real-ip') || 'Unknown IP');
-
-    const { revalidatePath } = require('next/cache');
     const updateData = { ...data };
     
     if (updateData.status === 'completed' && !updateData.completedAt) {
@@ -578,7 +574,7 @@ export async function createMaintenanceLog(data: any, createdBy: string, latitud
     const forwardedFor = headersList.get('x-forwarded-for');
     const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : (headersList.get('x-real-ip') || 'Unknown IP');
 
-    const { revalidatePath } = require('next/cache');
+    // revalidatePath imported at top
 
     let vehicleId;
     const existingVehicle = await db.query.vehicles.findFirst({

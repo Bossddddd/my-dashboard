@@ -101,7 +101,7 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
             
             let size = 36;
             let bgColor = hasUrgent ? 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)]' : 'bg-emerald-500 shadow-lg';
-            let animation = hasUrgent ? 'animate-pulse' : '';
+            const animation = hasUrgent ? 'animate-pulse' : '';
             
             if (!hasUrgent) {
               if (count > 10) {
@@ -110,7 +110,7 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
               }
               if (count > 50) {
                 size = 52;
-                bgColor = 'bg-rose-500 shadow-lg';
+                bgColor = 'bg-red-500 shadow-lg';
               }
             } else {
               if (count > 10) size = 44;
