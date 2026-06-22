@@ -28,6 +28,9 @@ jobs:
         
       - name: Type Check
         run: npx tsc --noEmit
+        
+      - name: Run Unit & Integration Tests
+        run: npm run test:coverage
 
   e2e-tests:
     name: Database Migration & E2E Tests
