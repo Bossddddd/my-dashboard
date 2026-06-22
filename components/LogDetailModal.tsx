@@ -8,7 +8,7 @@ import * as XLSX from "xlsx";
 import toast from "react-hot-toast";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../lib/constants";
 import { BulkPrintView } from "./BulkPrintView";
-import { updateMaintenanceLog } from "../app/actions";
+import { updateMaintenanceLog, getHistoryByLogId, createMaintenanceLog } from "../app/actions";
 
 const MapComponent = dynamic(() => import('./MapComponent'), { ssr: false });
 
@@ -18,22 +18,53 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [editedBy, setEditedBy] = useState('');
+  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (activeLogModal) {
       setFormData({ ...activeLogModal });
-      setIsEditing(false);
+      setIsEditing(activeLogModal.isNew === true);
+      const savedName = localStorage.getItem('lastEditedBy');
+      setEditedBy(savedName || '');
+      
+      const logId = activeLogModal.maintenanceLogId || activeLogModal.id;
+      if (logId) {
+        getHistoryByLogId(logId).then(setHistory);
+      }
     }
   }, [activeLogModal]);
 
   if (!activeLogModal) return null;
 
   const handleSave = async () => {
+    if (!editedBy.trim()) {
+      toast.error("กรุณาระบุชื่อผู้แก้ไขเพื่อเก็บประวัติ");
+      return;
+    }
+    localStorage.setItem('lastEditedBy', editedBy.trim());
     setIsSaving(true);
-    const toastId = toast.loading("กำลังบันทึกข้อมูล...");
+    const toastId = toast.loading("กำลังตรวจสอบตำแหน่งและบันทึกข้อมูล...");
+
+    let lat: number | null = null;
+    let lng: number | null = null;
+    
     try {
-      const id = activeLogModal.maintenanceLogId || activeLogModal.id;
+      if (navigator.geolocation) {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      }
+    } catch (err) {
+      console.warn("Location error or denied:", err);
+    }
+    try {
+      const isNew = activeLogModal.isNew;
+      
       const dataToSave = {
+        vehiclePlate: formData.vehiclePlate || formData.plate,
         status: formData.status,
         priority: formData.priority,
         teamName: formData.teamName,
@@ -43,13 +74,31 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
         specialTools: formData.specialTools || null,
       };
       
-      const res = await updateMaintenanceLog(id, dataToSave);
+      let res;
+      if (isNew) {
+        if (!dataToSave.vehiclePlate || !dataToSave.vehiclePlate.trim()) {
+           toast.error("กรุณาระบุทะเบียนรถ");
+           setIsSaving(false);
+           return;
+        }
+        res = await createMaintenanceLog(dataToSave, editedBy.trim(), lat, lng);
+      } else {
+        const id = activeLogModal.maintenanceLogId || activeLogModal.id;
+        res = await updateMaintenanceLog(id, dataToSave, editedBy.trim(), lat, lng);
+      }
 
       if (res.success) {
-        toast.success("บันทึกการแก้ไขเรียบร้อย", { id: toastId });
+        toast.success(isNew ? "สร้างใบงานเรียบร้อย" : "บันทึกการแก้ไขเรียบร้อย", { id: toastId });
         setIsEditing(false);
         if (onUpdate) {
-          onUpdate({ ...activeLogModal, ...dataToSave });
+          onUpdate(isNew ? null : { ...activeLogModal, ...dataToSave });
+        }
+        if (isNew) {
+           onClose();
+        } else {
+           const id = activeLogModal.maintenanceLogId || activeLogModal.id;
+           const newHistory = await getHistoryByLogId(id);
+           setHistory(newHistory);
         }
       } else {
         toast.error(res.error || "บันทึกไม่สำเร็จ", { id: toastId });
@@ -97,10 +146,10 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col scale-100 animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-slate-700/50">
         <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b flex justify-between items-center">
           <h3 className="font-black text-gray-900 dark:text-slate-100 text-sm sm:text-base flex items-center gap-2">
-            <span className="text-xl">📋</span> รายละเอียดใบงาน (Ticket ID: #{activeLogModal.maintenanceLogId || activeLogModal.id})
+            <span className="text-xl">📋</span> {activeLogModal.isNew ? "สร้างใบงานแจ้งซ่อมใหม่" : `รายละเอียดใบงาน (Ticket ID: #${activeLogModal.maintenanceLogId || activeLogModal.id})`}
           </h3>
           <div className="flex items-center gap-2">
-            {!isEditing && (
+            {!isEditing && !activeLogModal.isNew && (
               <button onClick={() => setIsEditing(true)} className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
                 ✏️ แก้ไข
               </button>
@@ -111,7 +160,17 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
         <div className="p-5 sm:p-6 space-y-5 text-sm overflow-y-auto max-h-[75vh]">
           <div className="bg-emerald-50 dark:bg-emerald-900/30/50 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
             <span className="text-emerald-800 dark:text-emerald-300/60 block font-bold text-xs mb-1">{t('vehiclePlateLabel')}</span>
-            <p className="font-black text-emerald-950 dark:text-emerald-100 text-2xl tracking-wide">{activeLogModal.vehiclePlate || activeLogModal.plate || "-"}</p>
+            {activeLogModal.isNew && isEditing ? (
+              <input 
+                type="text"
+                value={formData.vehiclePlate || formData.plate || ''}
+                onChange={(e) => setFormData({...formData, vehiclePlate: e.target.value})}
+                className="w-full text-xl font-black p-2 border border-emerald-200 rounded text-emerald-950 uppercase"
+                placeholder="เช่น กท 1234"
+              />
+            ) : (
+              <p className="font-black text-emerald-950 dark:text-emerald-100 text-2xl tracking-wide">{activeLogModal.vehiclePlate || activeLogModal.plate || "-"}</p>
+            )}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -256,10 +315,67 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
             )}
           </div>
           
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-slate-700/50 text-[11px] sm:text-xs text-gray-500 dark:text-slate-400">
-            <div>{t('reportedAtLabel')}<span className="font-bold text-gray-800 dark:text-slate-200 block mt-1">{formatDateTime(activeLogModal.reportedAt || '')}</span></div>
-            <div>{t('dueDateLabel')}<span className="font-bold text-rose-600 block mt-1">{formatDateTime(activeLogModal.dueDate || '')}</span></div>
-          </div>
+          {!activeLogModal.isNew && (
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-slate-700/50 text-[11px] sm:text-xs text-gray-500 dark:text-slate-400">
+              <div>{t('reportedAtLabel')}<span className="font-bold text-gray-800 dark:text-slate-200 block mt-1">{formatDateTime(activeLogModal.reportedAt || '')}</span></div>
+              <div>{t('dueDateLabel')}<span className="font-bold text-rose-600 block mt-1">{formatDateTime(activeLogModal.dueDate || '')}</span></div>
+            </div>
+          )}
+
+          {isEditing && (
+            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-xl">
+              <label className="block text-orange-800 dark:text-orange-300 font-bold text-xs mb-2">👤 ชื่อผู้แก้ไข (จำเป็นต้องระบุเพื่อเก็บประวัติ)</label>
+              <input 
+                type="text" 
+                value={editedBy} 
+                onChange={e => setEditedBy(e.target.value)} 
+                className="w-full text-sm p-2 border border-orange-300 dark:border-orange-700/50 bg-white dark:bg-slate-800 rounded font-medium dark:text-white" 
+                placeholder="ใส่ชื่อของคุณ เช่น นายสมชาย ช่างซ่อม"
+              />
+            </div>
+          )}
+
+          {history.length > 0 && !isEditing && (
+            <div className="mt-6 pt-4 border-t border-gray-100 dark:border-slate-700/50">
+              <h4 className="font-bold text-gray-800 dark:text-slate-200 text-sm mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                ประวัติการแก้ไข (Audit Log)
+              </h4>
+              <div className="space-y-3">
+                {history.map((h, i) => (
+                  <div key={i} className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700 text-xs shadow-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-bold text-blue-700 dark:text-blue-400">👤 {h.editedBy}</span>
+                      <span className="text-gray-400 text-[10px]">{formatDateTime(h.editedAt)}</span>
+                    </div>
+                    <div className="text-gray-600 dark:text-slate-300 mt-2 font-medium text-[11px] sm:text-xs">
+                      {(() => {
+                        try {
+                          const changesObj = JSON.parse(h.changes);
+                          const parts = [];
+                          if (changesObj.status) parts.push(`สถานะเป็น "${STATUS_CONFIG[changesObj.status]?.text || changesObj.status}"`);
+                          if (changesObj.priority) parts.push(`ความเร่งด่วนเป็น "${PRIORITY_CONFIG[changesObj.priority]?.text || changesObj.priority}"`);
+                          return parts.length > 0 ? `✏️ อัปเดต: ${parts.join(', ')}` : "✏️ อัปเดตข้อมูลทั่วไป";
+                        } catch(e) {
+                          return `✨ ${h.changes || "อัปเดตข้อมูล"}`;
+                        }
+                      })()}
+                    </div>
+                    {(h.ipAddress || h.editorLatitude) && (
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 flex flex-wrap gap-2 text-[10px]">
+                        {h.ipAddress && <span className="bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-slate-300">🌐 IP: {h.ipAddress}</span>}
+                        {h.editorLatitude && h.editorLongitude && (
+                          <a href={`https://www.google.com/maps?q=${h.editorLatitude},${h.editorLongitude}`} target="_blank" rel="noreferrer" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded hover:underline">
+                            📍 เปิดแผนที่ (Lat, Lng)
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="p-4 bg-gray-50 dark:bg-slate-900 border-t flex justify-between print:hidden">
