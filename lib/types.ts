@@ -12,6 +12,7 @@ export interface MaintenanceLog {
   description: string;
   reportedAt?: string | null;
   dueDate?: string | null;
+  specialTools?: string | null;
 }
 
 export interface VehicleRecord {

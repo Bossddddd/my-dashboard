@@ -3,7 +3,10 @@
 import { db } from "../db/db";
 import { revalidatePath } from 'next/cache';
 import { vehicles, maintenanceLogs } from "../db/schema";
+import { db } from "../lib/db";
+import { vehicles, maintenanceLogs, maintenanceHistoryLogs } from "../db/schema";
 import { eq, desc, asc, and, or, gte, lte, count, sum, inArray, lt, ilike } from "drizzle-orm";
+import { headers } from "next/headers";
 
 const parseSafeDate = (val: any) => {
   if (!val || String(val).trim() === "") return null;
@@ -128,7 +131,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
         columns: { 
           id: true, status: true, priority: true, description: true, technicianName: true,
           reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, teamName: true,
-          latitude: true, longitude: true, locationLabel: true
+          latitude: true, longitude: true, locationLabel: true, specialTools: true
         },
         with: { vehicle: { columns: { plate: true } } }
       })
@@ -212,7 +215,8 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           dueDate: log.dueDate ? log.dueDate.toISOString() : "",
           latitude: log.latitude,
           longitude: log.longitude,
-          locationLabel: log.locationLabel
+          locationLabel: log.locationLabel,
+          specialTools: log.specialTools
         };
 
         wStats.logs.push(logDataForList);
@@ -510,10 +514,15 @@ export async function resetDatabase() {
   }
 }
 
-export async function updateMaintenanceLog(id: number, data: any) {
+export async function updateMaintenanceLog(id: number, data: any, editedBy: string, latitude?: number | null, longitude?: number | null) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     // revalidatePath imported at top
+    const headersList = await headers();
+    const forwardedFor = headersList.get('x-forwarded-for');
+    const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : (headersList.get('x-real-ip') || 'Unknown IP');
+
+    const { revalidatePath } = require('next/cache');
     const updateData = { ...data };
     
     if (updateData.status === 'completed' && !updateData.completedAt) {
@@ -528,10 +537,90 @@ export async function updateMaintenanceLog(id: number, data: any) {
       .set(updateData)
       .where(eq(maintenanceLogs.id, id));
       
+    await db.insert(maintenanceHistoryLogs).values({
+      maintenanceLogId: id,
+      action: "update",
+      editedBy: editedBy || "ไม่ระบุชื่อผู้แก้ไข",
+      changes: JSON.stringify(updateData),
+      ipAddress: ipAddress,
+      editorLatitude: latitude || null,
+      editorLongitude: longitude || null,
+      editedAt: new Date(),
+    });
+      
     revalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error("Failed to update log:", error);
     return { success: false, error: "ไม่สามารถอัปเดตข้อมูลได้" };
+  }
+}
+
+export async function getHistoryByLogId(logId: number) {
+  try {
+    const history = await db.query.maintenanceHistoryLogs.findMany({
+      where: eq(maintenanceHistoryLogs.maintenanceLogId, logId),
+      orderBy: [desc(maintenanceHistoryLogs.editedAt)],
+    });
+    return history.map(h => ({
+      ...h,
+      editedAt: h.editedAt.toISOString(),
+    }));
+  } catch (error) {
+    console.error("Failed to fetch history:", error);
+    return [];
+  }
+}
+
+export async function createMaintenanceLog(data: any, createdBy: string, latitude?: number | null, longitude?: number | null) {
+  try {
+    const headersList = await headers();
+    const forwardedFor = headersList.get('x-forwarded-for');
+    const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : (headersList.get('x-real-ip') || 'Unknown IP');
+
+    const { revalidatePath } = require('next/cache');
+
+    let vehicleId;
+    const existingVehicle = await db.query.vehicles.findFirst({
+      where: eq(vehicles.plate, data.vehiclePlate)
+    });
+    
+    if (existingVehicle) {
+      vehicleId = existingVehicle.id;
+    } else {
+      const [newVehicle] = await db.insert(vehicles).values({
+        plate: data.vehiclePlate
+      }).returning({ id: vehicles.id });
+      vehicleId = newVehicle.id;
+    }
+
+    const [newLog] = await db.insert(maintenanceLogs).values({
+      vehicleId: vehicleId,
+      status: data.status || 'reported',
+      priority: data.priority || 'normal',
+      teamName: data.teamName || null,
+      technicianName: data.technicianName || null,
+      description: data.description || null,
+      cost: data.cost ? parseFloat(data.cost) : null,
+      specialTools: data.specialTools || null,
+      reportedAt: new Date(),
+    }).returning({ id: maintenanceLogs.id });
+
+    await db.insert(maintenanceHistoryLogs).values({
+      maintenanceLogId: newLog.id,
+      action: "create",
+      editedBy: createdBy || "ไม่ระบุชื่อผู้สร้าง",
+      changes: "สร้างใบงานแจ้งซ่อมใหม่",
+      ipAddress: ipAddress,
+      editorLatitude: latitude || null,
+      editorLongitude: longitude || null,
+      editedAt: new Date(),
+    });
+
+    revalidatePath('/');
+    return { success: true, logId: newLog.id };
+  } catch (error) {
+    console.error("Failed to create maintenance log:", error);
+    return { success: false, error: "ไม่สามารถสร้างใบงานได้" };
   }
 }

@@ -34,7 +34,9 @@ const createCustomIcon = (color: string, isUrgent: boolean = false) => {
       `,
       iconSize: [24, 24],
       iconAnchor: [12, 12],
-      popupAnchor: [0, -12]
+      popupAnchor: [0, -12],
+      // @ts-ignore - custom property for marker cluster
+      isUrgent: true
     });
   }
 
@@ -43,7 +45,9 @@ const createCustomIcon = (color: string, isUrgent: boolean = false) => {
     html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
-    popupAnchor: [0, -10]
+    popupAnchor: [0, -10],
+    // @ts-ignore - custom property for marker cluster
+    isUrgent: false
   });
 };
 
@@ -92,20 +96,29 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
           maxClusterRadius={50}
           iconCreateFunction={(cluster: any) => {
             const count = cluster.getChildCount();
-            let size = 36;
-            let bgColor = 'bg-emerald-500';
+            const markers = cluster.getAllChildMarkers();
+            const hasUrgent = markers.some((m: any) => m.options.icon && m.options.icon.options && m.options.icon.options.isUrgent);
             
-            if (count > 10) {
-              size = 44;
-              bgColor = 'bg-orange-500';
-            }
-            if (count > 50) {
-              size = 52;
-              bgColor = 'bg-rose-500';
+            let size = 36;
+            let bgColor = hasUrgent ? 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)]' : 'bg-emerald-500 shadow-lg';
+            let animation = hasUrgent ? 'animate-pulse' : '';
+            
+            if (!hasUrgent) {
+              if (count > 10) {
+                size = 44;
+                bgColor = 'bg-orange-500 shadow-lg';
+              }
+              if (count > 50) {
+                size = 52;
+                bgColor = 'bg-rose-500 shadow-lg';
+              }
+            } else {
+              if (count > 10) size = 44;
+              if (count > 50) size = 52;
             }
             
             return L.divIcon({
-              html: `<div class="flex items-center justify-center w-full h-full ${bgColor} text-white font-black rounded-full border-[3px] border-white shadow-lg text-sm transition-transform hover:scale-110">${count}</div>`,
+              html: `<div class="flex items-center justify-center w-full h-full ${bgColor} ${animation} text-white font-black rounded-full border-[3px] border-white text-sm transition-transform hover:scale-110">${count}</div>`,
               className: '',
               iconSize: L.point(size, size, true),
             });
@@ -141,6 +154,16 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
                       <span className="text-gray-500">พิกัด:</span>
                       <span className="font-mono">{log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}</span>
                     </div>
+
+                    {log.specialTools && (
+                      <div className="bg-amber-50 dark:bg-amber-900/30 p-2 rounded border border-amber-200 dark:border-amber-800 mt-1">
+                        <div className="text-xs font-bold text-amber-700 dark:text-amber-500 flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                          เครื่องมือพิเศษที่ต้องใช้:
+                        </div>
+                        <div className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{log.specialTools}</div>
+                      </div>
+                    )}
 
                     {onMarkerClick && (
                       <button 

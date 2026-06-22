@@ -24,6 +24,7 @@ export const maintenanceLogs = pgTable("MaintenanceLog", {
   technicianName: varchar("technicianName", { length: 255 }),
   category: varchar("category", { length: 255 }),
   locationLabel: varchar("locationLabel", { length: 255 }),
+  specialTools: text("specialTools"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   reportedAt: timestamp("reportedAt").defaultNow().notNull(),
@@ -36,9 +37,29 @@ export const maintenanceLogs = pgTable("MaintenanceLog", {
   vehicleId: integer("vehicleId").notNull().references(() => vehicles.id, { onDelete: "cascade" }),
 });
 
-export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one }) => ({
+export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one, many }) => ({
   vehicle: one(vehicles, {
     fields: [maintenanceLogs.vehicleId],
     references: [vehicles.id],
+  }),
+  historyLogs: many(maintenanceHistoryLogs),
+}));
+
+export const maintenanceHistoryLogs = pgTable("MaintenanceHistoryLog", {
+  id: serial("id").primaryKey(),
+  maintenanceLogId: integer("maintenanceLogId").notNull().references(() => maintenanceLogs.id, { onDelete: "cascade" }),
+  action: varchar("action", { length: 50 }).notNull(),
+  editedBy: varchar("editedBy", { length: 255 }).notNull(),
+  changes: text("changes"),
+  ipAddress: varchar("ipAddress", { length: 255 }),
+  editorLatitude: doublePrecision("editorLatitude"),
+  editorLongitude: doublePrecision("editorLongitude"),
+  editedAt: timestamp("editedAt").defaultNow().notNull(),
+});
+
+export const maintenanceHistoryLogsRelations = relations(maintenanceHistoryLogs, ({ one }) => ({
+  maintenanceLog: one(maintenanceLogs, {
+    fields: [maintenanceHistoryLogs.maintenanceLogId],
+    references: [maintenanceLogs.id],
   }),
 }));

@@ -124,7 +124,10 @@ export default function DashboardTab({
           )}
           {selectedIds.size === 0 && (
             <div className="flex gap-2 items-center">
-              <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg shadow-sm text-sm font-bold border border-gray-200 flex items-center gap-2">
+              <button onClick={() => handleLogClick?.({ isNew: true, status: 'reported', priority: 'normal' } as any)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg shadow-sm text-sm font-bold border border-emerald-700 flex items-center gap-1 transition-colors">
+                ➕ สร้างใบงาน
+              </button>
+              <button onClick={handlePrintSelected} disabled={isPrinting} className="bg-white text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg shadow-sm text-sm font-bold border border-gray-200 flex items-center gap-2 hidden sm:flex">
                 🖨️ {isPrinting ? "กำลังโหลด..." : "พิมพ์ทั้งหมด"}
               </button>
               <ExportButton fileNamePrefix="สรุปภาพรวมแดชบอร์ด" />
