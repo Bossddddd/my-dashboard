@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import { getAllLogsForExport } from "../../app/actions";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../../lib/constants";
 
-export default function teamsTab({
+export default function TeamsTab({
   selectedteamDetail,
   setSelectedteamDetail,
   currentteamLogPage,

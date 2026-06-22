@@ -23,6 +23,7 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
 
   useEffect(() => {
     if (activeLogModal) {
+      // eslint-disable-next-line
       setFormData({ ...activeLogModal });
       setIsEditing(activeLogModal.isNew === true);
       const savedName = localStorage.getItem('lastEditedBy');

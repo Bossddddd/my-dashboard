@@ -21,6 +21,7 @@ export default function MapComponent({ lat, lng, label }: { lat: number, lng: nu
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 

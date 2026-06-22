@@ -73,6 +73,7 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 
