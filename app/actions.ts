@@ -1,6 +1,7 @@
 "use server";
 
-import { db } from "../lib/db";
+import { db } from "../db/db";
+import { revalidatePath } from 'next/cache';
 import { vehicles, maintenanceLogs } from "../db/schema";
 import { eq, desc, asc, and, or, gte, lte, count, sum, inArray, lt, ilike } from "drizzle-orm";
 
@@ -322,6 +323,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
 }
 
 function notInArray(column: any, values: string[]) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { not, inArray } = require("drizzle-orm");
   return not(inArray(column, values));
 }
@@ -510,7 +512,8 @@ export async function resetDatabase() {
 
 export async function updateMaintenanceLog(id: number, data: any) {
   try {
-    const { revalidatePath } = require('next/cache');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // revalidatePath imported at top
     const updateData = { ...data };
     
     if (updateData.status === 'completed' && !updateData.completedAt) {

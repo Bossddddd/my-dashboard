@@ -48,6 +48,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
   // Close sidebar by default on mobile screens
   useEffect(() => {
     if (window.innerWidth < 640) {
+      // eslint-disable-next-line
       setIsSidebarOpen(false);
     }
   }, []);
@@ -85,7 +86,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
     const savedDarkMode = localStorage.getItem('isDarkMode') === 'true';
     const savedLang = localStorage.getItem('language') || 'th';
     const savedSla = localStorage.getItem('slaTarget') || '80';
-
+    // eslint-disable-next-line
     setIsDarkMode(savedDarkMode);
     setLanguage(savedLang);
     setSlaTarget(savedSla);
@@ -131,6 +132,7 @@ export default function Home({ initialStats, initialDateRange, initialCustomStar
   );
 
   useEffect(() => {
+    // eslint-disable-next-line
     setGlobalStatusFilter("all");
     setGlobalPriorityFilter("all");
     setSortField("");

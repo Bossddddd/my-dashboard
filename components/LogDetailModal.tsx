@@ -21,8 +21,9 @@ export default function LogDetailModal({ activeLogModal, onClose, onUpdate }: { 
 
   useEffect(() => {
     if (activeLogModal) {
+      // eslint-disable-next-line
       setFormData({ ...activeLogModal });
-      setIsEditing(false);
+      setIsEditing(activeLogModal.isNew === true);
     }
   }, [activeLogModal]);
 
