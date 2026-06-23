@@ -11,23 +11,23 @@ jobs:
     name: 🛡️ Quality Pipeline (Sequential)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: 📥 Pull code from GitHub
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: ⚙️ Install Node v20 & npm cache
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           
-      - name: Install dependencies
+      - name: 📦 Download packages (package-lock.json)
         run: npm ci
         
-      - name: 🧹 Run ESLint
+      - name: 🧹 Check code syntax & style rules (ESLint)
         run: npx eslint .
         
-      - name: 🏷️ Run Type Check
+      - name: 🏷️ Strict TypeScript type validation (tsc)
         run: npx tsc --noEmit
         
-      - name: 🧪 Run Unit Tests
+      - name: 🧪 Execute Vitest components testing
         run: npm run test:coverage
