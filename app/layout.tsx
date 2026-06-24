@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+// Test trigger for CI/CD Pipeline
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
