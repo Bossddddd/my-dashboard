@@ -43,7 +43,7 @@ test.describe("Audit Logs E2E Tests", () => {
         .first()
         .click();
       await expect(modal).toBeHidden();
-    } catch (e) {
+    } catch {
       // If table is empty (no data in DB), we skip clicking but the test doesn't fail the whole suite
       // ideally we should seed the DB, but this prevents random failures on empty DBs
       console.log("No data found in table, skipping modal click test");

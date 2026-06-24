@@ -6,9 +6,9 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../lib/constants";
-import { formatDateTime } from "./formatters";
 
 // Fix for default marker icon in leaflet with Next.js
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl:

@@ -33,7 +33,7 @@ test.describe("Settings & Preferences Tests", () => {
   });
 
   test("should change language and persist", async ({ page }) => {
-    const langSelect = page.locator("select").first(); // The first select is language usually
+    // The first select is language usually
     // We can be more specific: select near "Language" or "ภาษา"
     const languageContainer = page
       .locator('h4:has-text("ภาษา"), h4:has-text("Language")')

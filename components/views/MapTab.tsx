@@ -16,7 +16,7 @@ export default function MapTab({
   mapLogs: any[];
   setActiveLogModal: (log: any) => void;
 }) {
-  const { t } = useLanguage();
+  useLanguage();
 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
     Object.keys(STATUS_CONFIG).filter(

@@ -524,7 +524,7 @@ export default function LogDetailModal({
                           return parts.length > 0
                             ? `✏️ อัปเดต: ${parts.join(", ")}`
                             : "✏️ อัปเดตข้อมูลทั่วไป";
-                        } catch (e) {
+                        } catch {
                           return `✨ ${h.changes || "อัปเดตข้อมูล"}`;
                         }
                       })()}

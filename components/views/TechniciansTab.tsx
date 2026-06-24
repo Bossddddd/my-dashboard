@@ -127,7 +127,7 @@ export default function TechniciansTab({
           toast.success("พร้อมพิมพ์", { id: toastId });
           setIsPrinting(false);
         }, 500);
-      } catch (e) {
+      } catch {
         toast.error("เกิดข้อผิดพลาด", { id: toastId });
         setIsPrinting(false);
       }
