@@ -22,10 +22,10 @@ We have a robust Continuous Integration and Continuous Deployment (CI/CD) pipeli
 
 | ไฟล์ Workflow | ชื่อระบบ (Job Name) | เครื่องมือ (Tools) | หน้าที่การทำงาน |
 | :--- | :--- | :--- | :--- |
-| **`01-code-quality.yml`** | **Lint & Type Check**<br>**Unit Tests** | `ESLint`, `TypeScript`<br>`Vitest`, `React Testing Lib` | ทำงานทันทีเมื่อมีการ Push หรือ PR ตรวจสอบ Syntax, Types และรัน Unit Test |
+| **`01-code-quality.yml`** | **Code Quality & Build**<br>**Unit Tests** | `ESLint`, `TypeScript`<br>`Vitest`, `Next.js Build` | ทำงานทันทีเมื่อมีการ Push หรือ PR ตรวจสอบ Syntax, Types, รัน Unit Test และจำลอง Build |
 | **`02-database.yml`** | **Database Migration** | `Drizzle Kit` | ทำงานต่อจาก 01 อัปเดตโครงสร้างฐานข้อมูล (Schema) ให้พร้อมสำหรับ E2E |
-| **`03-e2e-tests.yml`** | **Build & E2E Tests** | `Next.js Build`<br>`Playwright` | ทำงานต่อจาก 02 จำลองการ Build ระบบและใช้บอททดสอบการใช้งานจริง (UI Testing) |
-| *(อัตโนมัติ)* | **Deployment** | `Vercel` | หากผ่านขั้นตอนทั้งหมด โค้ดจะถูกดึงไปอัปเดตบน Vercel Production/Preview อัตโนมัติ |
+| **`03-e2e-tests.yml`** | **E2E / Read-Only Tests** | `Playwright` | รันบอททดสอบการใช้งานจริง (UI Testing) โดยฝั่ง Dev จะรัน E2E ปกติ ส่วน Production จะรันเฉพาะแบบ Read-Only |
+| *(อัตโนมัติ)* | **Deployment** | `Vercel`, `Sentry` | หากผ่านขั้นตอนทั้งหมด โค้ดจะถูกดึงไปอัปเดตบน Vercel อัตโนมัติ (พร้อมรัน Sentry Monitoring) |
 
 ### 🔄 Workflow: Development to Production
 กระบวนการทำงานของเราถูกออกแบบให้แบ่งออกเป็น 2 ระยะ (Phase) ดังภาพรวมด้านบน:

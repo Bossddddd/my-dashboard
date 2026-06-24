@@ -1,29 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: transparent; margin: 0; padding: 40px; }
-    /* Force huge lines and arrows via CSS */
-    .mermaid svg .edgePath .path {
-      stroke-width: 8px !important;
-    }
-    .mermaid svg .edgeLabel {
-      font-size: 32px !important;
-      font-weight: bold;
-    }
-    .mermaid svg marker {
-      overflow: visible;
-    }
-    .mermaid svg marker path {
-      transform: scale(2);
-      transform-origin: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="mermaid">
+import mermaid from 'mermaid';
+
+const code = `
     graph TD
-        %% Define styles
         classDef branch fill:#e3f2fd,stroke:#1976d2,stroke-width:6px,color:#000
         classDef step01 fill:#e8f5e9,stroke:#2e7d32,stroke-width:6px,color:#000
         classDef step02 fill:#fff3e0,stroke:#f57c00,stroke-width:6px,color:#000
@@ -63,13 +41,13 @@
         M1(["Merge 'dev' into 'main'<br/>(Create Pull Request / Merge)"]):::branch
         Q2["01: Code Quality, Security & Build<br/>(Lint, Type Check, Unit Tests, Next.js Build)"]:::step01
         D2["02: Database Migration<br/>(Drizzle Push to Test DB)"]:::step02
-        E2["03: Read-Only Tests<br/>(Smoke Test / Health Check)"]:::step03
+        E2["03: Read-Only Tests<br/>(Production Sanity Check / Read-Only)"]:::step03
         V2(["Vercel Production Deployment<br/>(Live Environment)"]):::deploy
         SEN2(["👁️ Sentry Error Tracking<br/>(Monitor Production)"]):::sentry
         F2(["Revert Merge & Fix Code"]):::error
         
-        V1 -->|Ready for Review| CHK1
-        CHK1 -->|Yes: Promote| PhaseProd
+        V1 ==>|Ready for Review| CHK1
+        CHK1 ==>|Yes: Promote| PhaseProd
         CHK1 -.->|No: Fail| F1
         
         PhaseProd --> M1
@@ -83,24 +61,14 @@
         D2 -.->|Fail| F2
         E2 -.->|Fail| F2
         F2 -.-> F1
-  </div>
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ 
-        startOnLoad: true, 
-        theme: 'default',
-        themeVariables: {
-            fontSize: '36px',
-            fontFamily: 'Segoe UI, sans-serif',
-            nodeBorder: '6px',
-            lineColor: '#333'
-        },
-        flowchart: {
-            nodeSpacing: 120,
-            rankSpacing: 180,
-            curve: 'basis'
-        }
-    });
-  </script>
-</body>
-</html>
+`;
+
+console.log("TESTING PARSE...");
+(async () => {
+try {
+  await mermaid.parse(code);
+  console.log("PARSE SUCCESS!");
+} catch (e) {
+  console.log("PARSE FAILED:", e.message);
+}
+})();

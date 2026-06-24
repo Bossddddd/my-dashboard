@@ -4,10 +4,15 @@ import path from 'path';
 (async () => {
   const browser = await chromium.launch();
   const context = await browser.newContext({
-    viewport: { width: 3840, height: 4200 }, 
-    deviceScaleFactor: 4 
+    viewport: { width: 3840, height: 10000 }, 
+    deviceScaleFactor: 2 
   });
   const page = await context.newPage();
+  
+  // Capture console messages to see what mermaid is complaining about
+  page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
+  page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
+
   await page.goto(`file://${path.resolve('ci-cd.html')}`);
   await page.waitForTimeout(4000); // Wait for mermaid to render
   const element = await page.$('.mermaid svg');
