@@ -30,7 +30,9 @@ export default function LogDetailModal({
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [editedBy, setEditedBy] = useState("");
+  // สมมุติว่าดึงมาจากระบบ Login
+  const currentUser = { name: "แอดมินระบบ (Admin)" };
+  const editedBy = currentUser.name;
   const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
@@ -38,8 +40,6 @@ export default function LogDetailModal({
       // eslint-disable-next-line
       setFormData({ ...activeLogModal });
       setIsEditing(activeLogModal.isNew === true);
-      const savedName = localStorage.getItem("lastEditedBy");
-      setEditedBy(savedName || "");
 
       const logId = activeLogModal.maintenanceLogId || activeLogModal.id;
       if (logId) {
@@ -51,11 +51,7 @@ export default function LogDetailModal({
   if (!activeLogModal) return null;
 
   const handleSave = async () => {
-    if (!editedBy.trim()) {
-      toast.error("กรุณาระบุชื่อผู้แก้ไขเพื่อเก็บประวัติ");
-      return;
-    }
-    localStorage.setItem("lastEditedBy", editedBy.trim());
+
     setIsSaving(true);
     const toastId = toast.loading("กำลังตรวจสอบตำแหน่งและบันทึกข้อมูล...");
 
@@ -462,17 +458,15 @@ export default function LogDetailModal({
           )}
 
           {isEditing && (
-            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-xl">
-              <label className="block text-orange-800 dark:text-orange-300 font-bold text-xs mb-2">
-                👤 ชื่อผู้แก้ไข (จำเป็นต้องระบุเพื่อเก็บประวัติ)
-              </label>
-              <input
-                type="text"
-                value={editedBy}
-                onChange={(e) => setEditedBy(e.target.value)}
-                className="w-full text-sm p-2 border border-orange-300 dark:border-orange-700/50 bg-white dark:bg-slate-800 rounded font-medium dark:text-white"
-                placeholder="ใส่ชื่อของคุณ เช่น นายสมชาย ช่างซ่อม"
-              />
+            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-xl flex items-center justify-between">
+              <div>
+                <label className="block text-orange-800 dark:text-orange-300 font-bold text-xs mb-1">
+                  👤 ผู้บันทึก/แก้ไขข้อมูล
+                </label>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {editedBy} (ข้อมูลจากระบบ Login)
+                </div>
+              </div>
             </div>
           )}
 
