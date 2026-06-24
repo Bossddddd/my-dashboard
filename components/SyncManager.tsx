@@ -18,7 +18,9 @@ export default function SyncManager() {
 
   useEffect(() => {
     // Initial check
-    updateStatus();
+    setTimeout(() => {
+      updateStatus();
+    }, 0);
 
     // Event listeners
     const handleOnline = async () => {
