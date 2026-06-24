@@ -23,7 +23,7 @@ test.describe("Workshops & Technicians Tests", () => {
       await firstWorkshopRow.click();
 
       // Wait for the detail view to appear
-      const backBtn = page.locator('button:has-text("กลับหน้าหลักอู่ซ่อม"), button:has-text("Back")').first();
+      const backBtn = page.locator('button:has-text("กลับไปตารางทีมช่างทั้งหมด"), button:has-text("Back")').first();
       await expect(backBtn).toBeVisible();
 
       // Test pagination inside workshop detail
@@ -66,7 +66,7 @@ test.describe("Workshops & Technicians Tests", () => {
     if (await firstTechRow.isVisible()) {
       await firstTechRow.click();
       
-      const backBtn = page.locator('button:has-text("กลับหน้าหลักช่าง"), button:has-text("Back")').first();
+      const backBtn = page.locator('button:has-text("กลับไปตารางช่างทั้งหมด"), button:has-text("Back")').first();
       await expect(backBtn).toBeVisible();
 
       // Open a log from technician detail
