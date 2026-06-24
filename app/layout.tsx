@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import SyncManager from "@/components/SyncManager";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <SpeedInsights />
+        <SyncManager />
         <Toaster
           position="top-right"
           toastOptions={{
