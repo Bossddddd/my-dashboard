@@ -13,7 +13,6 @@ import {
   getHistoryByLogId,
   createMaintenanceLog,
 } from "../app/actions";
-import { addOfflineTask } from "../lib/syncQueue";
 
 const MapComponent = dynamic(() => import("./MapComponent"), { ssr: false });
 
@@ -89,31 +88,6 @@ export default function LogDetailModal({
       };
 
       let res;
-
-      if (!navigator.onLine) {
-        if (isNew) {
-          if (!dataToSave.vehiclePlate || !dataToSave.vehiclePlate.trim()) {
-            toast.error("กรุณาระบุทะเบียนรถ", { id: toastId });
-            setIsSaving(false);
-            return;
-          }
-          addOfflineTask({ type: "CREATE", dataToSave, editedBy: editedBy.trim(), lat, lng });
-        } else {
-          const id = activeLogModal.maintenanceLogId || activeLogModal.id;
-          addOfflineTask({ type: "UPDATE", logId: id, dataToSave, editedBy: editedBy.trim(), lat, lng });
-        }
-
-        toast.success("บันทึกข้อมูลออฟไลน์เรียบร้อย จะส่งอัตโนมัติเมื่อมีสัญญาณ", { id: toastId });
-        setIsEditing(false);
-        if (onUpdate) {
-          onUpdate(isNew ? null : { ...activeLogModal, ...dataToSave });
-        }
-        if (isNew) {
-          onClose();
-        }
-        setIsSaving(false);
-        return;
-      }
 
       if (isNew) {
         if (!dataToSave.vehiclePlate || !dataToSave.vehiclePlate.trim()) {
