@@ -16,20 +16,32 @@ Welcome to the **Dashboard Maintenance** project! This is a modern, fast, and re
 
 ## 🚀 CI/CD Pipeline (Automated Workflows)
 
-We have a robust Continuous Integration and Continuous Deployment (CI/CD) pipeline configured via **GitHub Actions** (`.github/workflows/ci.yml`).
-Every time code is pushed to the `main` branch or a Pull Request is created, the following automated steps are executed sequentially to ensure code quality:
+We have a robust Continuous Integration and Continuous Deployment (CI/CD) pipeline configured via **GitHub Actions** in `.github/workflows/`. The pipeline is split into 3 sequential workflows to improve modularity and observability:
 
-| ลำดับ | ชื่อระบบ (Job Name)          | เครื่องมือที่ใช้ (Tools)       | หน้าที่การทำงาน (Description)                                                           |
-| :---- | :--------------------------- | :----------------------------- | :-------------------------------------------------------------------------------------- |
-| **1** | **Lint Check**               | `ESLint`                       | ตรวจสอบมาตรฐานการเขียนโค้ดและค้นหาข้อผิดพลาดทาง Syntax เบื้องต้น                        |
-| **2** | **Type Check**               | `TypeScript` (`tsc`)           | ตรวจสอบความถูกต้องของชนิดตัวแปร (Types) ทั้งหมดในโปรเจค                                 |
-| **3** | **Unit & Integration Tests** | `Vitest` + `React Testing Lib` | รันชุดทดสอบระดับฟังก์ชันและคอมโพเนนต์ พร้อมออกรายงาน Code Coverage                      |
-| **4** | **Database Migration**       | `Drizzle Kit`                  | อัปเดตโครงสร้างฐานข้อมูล (Schema) ใน Test Database ให้เป็นเวอร์ชันล่าสุด                |
-| **5** | **Build App**                | `Next.js Build`                | ทดลองจำลองการ Build โปรเจคเสมือนขึ้น Server จริง เพื่อหาข้อผิดพลาด                      |
-| **6** | **End-to-End (E2E) Tests**   | `Playwright`                   | จำลองบอทผู้ใช้งานจริงเพื่อคลิกและทดสอบ Flow การทำงานหลักบนหน้าเว็บ                      |
-| **7** | **Deployment**               | `Vercel`                       | _(ทำงานอัตโนมัติ)_ หากผ่านขั้นตอนที่ 1-6 ทั้งหมด Vercel จะดึงโค้ดไปอัปเดตบนหน้าเว็บจริง |
+![CI/CD Pipeline Diagram](/ci-cd-diagram.png)
 
-> **💡 หมายเหตุ:** หากขั้นตอนใดขั้นตอนหนึ่งทำงานล้มเหลว (Failed) ระบบจะหยุดการทำงานของขั้นตอนถัดไปทันที เพื่อป้องกันไม่ให้บั๊กหลุดไปถึงผู้ใช้งานจริง
+| ไฟล์ Workflow | ชื่อระบบ (Job Name) | เครื่องมือ (Tools) | หน้าที่การทำงาน |
+| :--- | :--- | :--- | :--- |
+| **`01-code-quality.yml`** | **Code Quality & Build**<br>**Unit Tests** | `ESLint`, `TypeScript`<br>`Vitest`, `Next.js Build` | ทำงานทันทีเมื่อมีการ Push หรือ PR ตรวจสอบ Syntax, Types, รัน Unit Test และจำลอง Build |
+| **`02-database.yml`** | **Database Migration** | `Drizzle Kit` | ทำงานต่อจาก 01 อัปเดตโครงสร้างฐานข้อมูล (Schema) ให้พร้อมสำหรับ E2E |
+| **`03-e2e-tests.yml`** | **E2E / Read-Only Tests** | `Playwright` | รันบอททดสอบการใช้งานจริง (UI Testing) โดยฝั่ง Dev จะรัน E2E ปกติ ส่วน Production จะรันเฉพาะแบบ Read-Only |
+| *(อัตโนมัติ)* | **Deployment** | `Vercel`, `Sentry` | หากผ่านขั้นตอนทั้งหมด โค้ดจะถูกดึงไปอัปเดตบน Vercel อัตโนมัติ (พร้อมรัน Sentry Monitoring) |
+
+### 🔄 Workflow: Development to Production
+กระบวนการทำงานของเราถูกออกแบบให้แบ่งออกเป็น 2 ระยะ (Phase) ดังภาพรวมด้านบน:
+
+1. **Development Phase (ช่วงกำลังพัฒนา)**
+   - ทีมงานเขียนโค้ดและ **Push** งานขึ้นไปยังสาขา (Branch) `dev`
+   - ระบบ CI Pipeline (01, 02, 03) จะทำงานอัตโนมัติเพื่อตรวจสอบ Syntax, รัน Test และเช็คบั๊ก
+   - หากรันผ่านทั้งหมด Vercel จะดึงไปสร้าง **Preview Deployment** เพื่อให้ทีมงานสามารถคลิกเข้าไปทดสอบหน้าเว็บจาก URL ชั่วคราวได้
+   - *หากมีจุดไหนพัง (Fail) นักพัฒนาจะต้องแก้ไขโค้ดและ Push ใหม่ให้ผ่าน*
+
+2. **Production Phase (ช่วงเปิดให้คนนอกใช้งานจริง)**
+   - เมื่องานบน `dev` ถูกตรวจสอบและอนุมัติแล้ว จะทำการ **Merge (รวมโค้ด)** จาก `dev` เข้าสู่สาขา `main`
+   - ระบบ CI Pipeline จะรันซ้ำอีกครั้งบน `main` เพื่อ Double-check ความปลอดภัยสูงสุด
+   - หากเรียบร้อย Vercel จะดึงไปสร้าง **Production Deployment** เพื่ออัปเดตระบบจริงให้ทุกคนได้ใช้งานทันที
+
+> **💡 หมายเหตุ:** หากขั้นตอนใดใน CI Pipeline ทำงานล้มเหลว (Failed) ระบบจะหยุดการทำงานของ Workflow ถัดไปทันที เพื่อป้องกันไม่ให้บั๊กหลุดไปถึงผู้ใช้งานจริง
 
 ---
 
