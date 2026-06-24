@@ -12,7 +12,6 @@
     "db:generate:dev": "cross-env ENV_FILE=.env.development drizzle-kit generate",
     "db:generate:prod": "cross-env ENV_FILE=.env.production drizzle-kit generate",
     "db:studio:dev": "cross-env ENV_FILE=.env.development drizzle-kit studio",
-    "db:push:prod": "cross-env ENV_FILE=.env.production drizzle-kit push",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -20,6 +19,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "@sentry/nextjs": "^10.56.0",
+    "@serwist/next": "^9.5.11",
     "@vercel/speed-insights": "^2.0.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
@@ -31,6 +31,7 @@
     "react-leaflet": "^5.0.0",
     "react-leaflet-cluster": "^4.1.3",
     "recharts": "^3.8.1",
+    "serwist": "^9.5.11",
     "swr": "^2.4.1",
     "xlsx": "^0.18.5"
   },
