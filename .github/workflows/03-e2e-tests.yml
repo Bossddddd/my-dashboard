@@ -26,6 +26,25 @@ jobs:
       - name: 📦 Strict installation from package-lock.json
         run: npm ci
 
+      - name: 💾 Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: 💾 Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: 🏗️ Compile Next.js pages and optimize assets
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
