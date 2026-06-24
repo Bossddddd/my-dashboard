@@ -88,6 +88,7 @@ export default function LogDetailModal({
       };
 
       let res;
+
       if (isNew) {
         if (!dataToSave.vehiclePlate || !dataToSave.vehiclePlate.trim()) {
           toast.error("กรุณาระบุทะเบียนรถ");
