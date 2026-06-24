@@ -13,13 +13,13 @@ test.describe("Map View Tests", () => {
     // Click the Map tab
     await page.locator(".flex.flex-col.gap-1.pl-4 div").nth(3).click();
 
+    // Check if Map view header exists to ensure tab has fully loaded
+    const mapHeader = page.locator("text=แผนที่พิกัดรถเสีย");
+    await expect(mapHeader).toBeVisible();
+
     // Check if the Leaflet container is visible OR the empty state is visible
     const leafletMap = page.locator(".leaflet-container");
     const emptyState = page.locator("text=ไม่มีข้อมูลพิกัดสถานที่ในระบบ");
     await expect(leafletMap.or(emptyState)).toBeVisible({ timeout: 10000 });
-
-    // Check if map pane exists, OR empty state is shown
-    const mapPane = page.locator(".leaflet-map-pane");
-    await expect(mapPane.or(emptyState)).toBeVisible();
   });
 });

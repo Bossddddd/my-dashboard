@@ -13,8 +13,8 @@ test.describe("Workshops & Technicians Tests", () => {
     // Navigate to Workshops (2nd item in submenu)
     await page.locator(".flex.flex-col.gap-1.pl-4 div").nth(1).click();
 
-    // Check if Workshops table/grid exists
-    const workshopTitle = page.locator("h3").first();
+    // Check if Workshops table/grid exists to ensure tab has fully loaded
+    const workshopTitle = page.locator("text=สัดส่วนสถานะงานซ่อมรวมทุกทีมช่าง");
     await expect(workshopTitle).toBeVisible();
 
     // Click on the first workshop row if available
