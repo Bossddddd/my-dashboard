@@ -101,12 +101,25 @@ export default function SyncManager() {
               มีข้อมูลรอส่ง {queueCount} รายการ
             </p>
             {!isOffline && !isSyncing && (
-              <button 
-                onClick={() => window.dispatchEvent(new Event("manualSyncTriggered"))}
-                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline"
-              >
-                ส่งข้อมูลทันที
-              </button>
+              <div className="flex gap-2 ml-1">
+                <button 
+                  onClick={() => window.dispatchEvent(new Event("manualSyncTriggered"))}
+                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline"
+                >
+                  ส่งข้อมูลทันที
+                </button>
+                <button 
+                  onClick={() => {
+                    if (confirm("ต้องการลบข้อมูลที่ค้างอยู่และส่งไม่ผ่านทั้งหมดหรือไม่? (ข้อมูลจะหายไป)")) {
+                      localStorage.removeItem("offline_sync_queue");
+                      window.dispatchEvent(new Event("offlineQueueUpdated"));
+                    }
+                  }}
+                  className="text-xs font-semibold text-red-600 hover:text-red-700 underline"
+                >
+                  ล้างคิว
+                </button>
+              </div>
             )}
           </div>
         )}
