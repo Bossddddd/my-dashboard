@@ -17,20 +17,18 @@ export default function SyncManager() {
   };
 
   useEffect(() => {
-    // Initial check
-    setTimeout(() => {
-      updateStatus();
-    }, 0);
+    let syncing = false;
 
-    // Event listeners
-    const handleOnline = async () => {
-      setIsOffline(false);
+    const doSync = async () => {
+      if (syncing) return;
       const tasks = getOfflineTasks();
       if (tasks.length > 0) {
+        syncing = true;
         setIsSyncing(true);
         toast.loading(`กำลังส่งข้อมูลที่ค้างอยู่ ${tasks.length} รายการ...`, { id: "sync" });
         const res = await processSyncQueue();
         setIsSyncing(false);
+        syncing = false;
         updateStatus();
         
         if (res.success > 0) {
@@ -42,6 +40,20 @@ export default function SyncManager() {
       }
     };
 
+    // Initial check
+    setTimeout(() => {
+      updateStatus();
+      if (navigator.onLine && getOfflineTasks().length > 0) {
+        doSync();
+      }
+    }, 0);
+
+    // Event listeners
+    const handleOnline = () => {
+      setIsOffline(false);
+      doSync();
+    };
+
     const handleOffline = () => {
       setIsOffline(true);
       toast("ไม่มีสัญญาณอินเทอร์เน็ต ระบบเปลี่ยนเป็นออฟไลน์", { icon: "🔴" });
@@ -50,11 +62,15 @@ export default function SyncManager() {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("offlineQueueUpdated", updateStatus);
+    
+    // Custom event to trigger manual sync
+    window.addEventListener("manualSyncTriggered", doSync);
 
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("offlineQueueUpdated", updateStatus);
+      window.removeEventListener("manualSyncTriggered", doSync);
     };
   }, []);
 
@@ -80,9 +96,19 @@ export default function SyncManager() {
               : "ออนไลน์"}
         </h4>
         {queueCount > 0 && (
-          <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
-            มีข้อมูลรอส่ง {queueCount} รายการ
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
+              มีข้อมูลรอส่ง {queueCount} รายการ
+            </p>
+            {!isOffline && !isSyncing && (
+              <button 
+                onClick={() => window.dispatchEvent(new Event("manualSyncTriggered"))}
+                className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline"
+              >
+                ส่งข้อมูลทันที
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

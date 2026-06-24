@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
@@ -10,9 +10,15 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "EVT Admin Panel",
   description: "ระบบจัดการซ่อมบำรุงยานพาหนะ",
+  manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
+    apple: "/icon.svg",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
 };
 
 export default function RootLayout({
