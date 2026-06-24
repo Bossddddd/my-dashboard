@@ -36,6 +36,7 @@ jobs:
       - name: 🏗️ Build Next.js App
         run: npm run build
         env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
 
       # --- PHASE 02: Database Migration ---

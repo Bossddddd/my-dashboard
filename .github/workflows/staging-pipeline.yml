@@ -36,7 +36,7 @@ jobs:
       - name: 🏗️ Build Next.js App
         run: npm run build
         env:
-          # If Sentry or other tools require build-time secrets, they go here
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
 
       # --- PHASE 02: Database Migration ---
