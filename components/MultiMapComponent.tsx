@@ -1,30 +1,31 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { STATUS_CONFIG, PRIORITY_CONFIG } from '../lib/constants';
-import { formatDateTime } from './formatters';
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { STATUS_CONFIG, PRIORITY_CONFIG } from "../lib/constants";
 
 // Fix for default marker icon in leaflet with Next.js
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   tooltipAnchor: [16, -28],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 // Custom icons based on status and urgency
 const createCustomIcon = (color: string, isUrgent: boolean = false) => {
   if (isUrgent) {
     return L.divIcon({
-      className: 'custom-div-icon',
+      className: "custom-div-icon",
       html: `
         <div class="relative flex h-6 w-6">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: ${color};"></span>
@@ -36,40 +37,46 @@ const createCustomIcon = (color: string, isUrgent: boolean = false) => {
       iconAnchor: [12, 12],
       popupAnchor: [0, -12],
       // @ts-ignore - custom property for marker cluster
-      isUrgent: true
+      isUrgent: true,
     });
   }
 
   return L.divIcon({
-    className: 'custom-div-icon',
+    className: "custom-div-icon",
     html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
     popupAnchor: [0, -10],
     // @ts-ignore - custom property for marker cluster
-    isUrgent: false
+    isUrgent: false,
   });
 };
 
 const iconCache: Record<string, L.DivIcon> = {};
 
 function getMarkerIcon(log: any) {
-  const isUrgent = log.priority === 'urgent' || log.priority === 'high';
-  let color = '#ef4444'; // default red
-  if (log.status === 'completed') color = '#10b981';
-  if (log.status === 'cancelled') color = '#6b7280';
-  if (log.status === 'in_progress') color = '#3b82f6';
-  if (log.status === 'pending_parts') color = '#f97316';
-  
+  const isUrgent = log.priority === "urgent" || log.priority === "high";
+  let color = "#ef4444"; // default red
+  if (log.status === "completed") color = "#10b981";
+  if (log.status === "cancelled") color = "#6b7280";
+  if (log.status === "in_progress") color = "#3b82f6";
+  if (log.status === "pending_parts") color = "#f97316";
+
   const cacheKey = `${color}-${isUrgent}`;
   if (!iconCache[cacheKey]) {
     iconCache[cacheKey] = createCustomIcon(color, isUrgent);
   }
-  
+
   return iconCache[cacheKey];
 }
 
-export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[], onMarkerClick?: (log: any) => void }) {
+export default function MultiMapComponent({
+  logs,
+  onMarkerClick,
+}: {
+  logs: any[];
+  onMarkerClick?: (log: any) => void;
+}) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -77,97 +84,142 @@ export default function MultiMapComponent({ logs, onMarkerClick }: { logs: any[]
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div className="w-full h-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl flex items-center justify-center text-slate-400 text-sm font-bold shadow-inner">กำลังโหลดแผนที่...</div>;
+  if (!mounted)
+    return (
+      <div className="w-full h-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl flex items-center justify-center text-slate-400 text-sm font-bold shadow-inner">
+        กำลังโหลดแผนที่...
+      </div>
+    );
 
   // Center map on Thailand or the first log's coordinates if available
-  const defaultCenter: [number, number] = logs.length > 0 
-    ? [logs[0].latitude, logs[0].longitude] 
-    : [13.7563, 100.5018]; // Bangkok
+  const defaultCenter: [number, number] =
+    logs.length > 0
+      ? [logs[0].latitude, logs[0].longitude]
+      : [13.7563, 100.5018]; // Bangkok
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm relative z-0">
-      <MapContainer center={defaultCenter} zoom={6} style={{ height: '100%', width: '100%' }}>
+      <MapContainer
+        center={defaultCenter}
+        zoom={6}
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MarkerClusterGroup 
-          chunkedLoading 
+        <MarkerClusterGroup
+          chunkedLoading
           maxClusterRadius={50}
           iconCreateFunction={(cluster: any) => {
             const count = cluster.getChildCount();
             const markers = cluster.getAllChildMarkers();
-            const hasUrgent = markers.some((m: any) => m.options.icon && m.options.icon.options && m.options.icon.options.isUrgent);
-            
+            const hasUrgent = markers.some(
+              (m: any) =>
+                m.options.icon &&
+                m.options.icon.options &&
+                m.options.icon.options.isUrgent,
+            );
+
             let size = 36;
-            let bgColor = hasUrgent ? 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)]' : 'bg-emerald-500 shadow-lg';
-            let animation = hasUrgent ? 'animate-pulse' : '';
-            
+            let bgColor = hasUrgent
+              ? "bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)]"
+              : "bg-emerald-500 shadow-lg";
+            const animation = hasUrgent ? "animate-pulse" : "";
+
             if (!hasUrgent) {
               if (count > 10) {
                 size = 44;
-                bgColor = 'bg-orange-500 shadow-lg';
+                bgColor = "bg-orange-500 shadow-lg";
               }
               if (count > 50) {
                 size = 52;
-                bgColor = 'bg-rose-500 shadow-lg';
+                bgColor = "bg-red-500 shadow-lg";
               }
             } else {
               if (count > 10) size = 44;
               if (count > 50) size = 52;
             }
-            
+
             return L.divIcon({
               html: `<div class="flex items-center justify-center w-full h-full ${bgColor} ${animation} text-white font-black rounded-full border-[3px] border-white text-sm transition-transform hover:scale-110">${count}</div>`,
-              className: '',
+              className: "",
               iconSize: L.point(size, size, true),
             });
           }}
         >
           {logs.map((log) => {
             if (!log.latitude || !log.longitude) return null;
-            
+
             return (
-              <Marker 
-                key={log.maintenanceLogId || log.id} 
-                position={[log.latitude, log.longitude]} 
+              <Marker
+                key={log.maintenanceLogId || log.id}
+                position={[log.latitude, log.longitude]}
                 icon={getMarkerIcon(log)}
               >
                 <Popup>
                   <div className="flex flex-col gap-2 min-w-[200px]">
                     <div className="border-b pb-2 mb-1">
-                      <span className="font-black text-sm">#{log.maintenanceLogId || log.id} {log.vehiclePlate}</span>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{log.description}</p>
+                      <span className="font-black text-sm">
+                        #{log.maintenanceLogId || log.id} {log.vehiclePlate}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                        {log.description}
+                      </p>
                     </div>
-                    
+
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-500">สถานะ:</span>
-                      <span className="font-bold">{STATUS_CONFIG[log.status]?.text || log.status}</span>
+                      <span className="font-bold">
+                        {STATUS_CONFIG[log.status]?.text || log.status}
+                      </span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-500">ความเร่งด่วน:</span>
-                      <span className="font-bold">{PRIORITY_CONFIG[log.priority]?.text || log.priority}</span>
+                      <span className="font-bold">
+                        {PRIORITY_CONFIG[log.priority]?.text || log.priority}
+                      </span>
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-500">พิกัด:</span>
-                      <span className="font-mono">{log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}</span>
+                      <span className="font-mono">
+                        {log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}
+                      </span>
                     </div>
 
                     {log.specialTools && (
                       <div className="bg-amber-50 dark:bg-amber-900/30 p-2 rounded border border-amber-200 dark:border-amber-800 mt-1">
                         <div className="text-xs font-bold text-amber-700 dark:text-amber-500 flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            ></path>
+                          </svg>
                           เครื่องมือพิเศษที่ต้องใช้:
                         </div>
-                        <div className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{log.specialTools}</div>
+                        <div className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                          {log.specialTools}
+                        </div>
                       </div>
                     )}
 
                     {onMarkerClick && (
-                      <button 
-                        onClick={(e) => { e.preventDefault(); onMarkerClick(log); }}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onMarkerClick(log);
+                        }}
                         className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-xs transition-colors"
                       >
                         ดูรายละเอียดใบงาน

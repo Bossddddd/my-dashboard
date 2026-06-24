@@ -1,11 +1,24 @@
 "use server";
 
-import { db } from "../db/db";
-import { revalidatePath } from 'next/cache';
-import { vehicles, maintenanceLogs } from "../db/schema";
 import { db } from "../lib/db";
-import { vehicles, maintenanceLogs, maintenanceHistoryLogs } from "../db/schema";
-import { eq, desc, asc, and, or, gte, lte, count, sum, inArray, lt, ilike } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import {
+  vehicles,
+  maintenanceLogs,
+  maintenanceHistoryLogs,
+} from "../db/schema";
+import {
+  eq,
+  desc,
+  and,
+  or,
+  gte,
+  lte,
+  count,
+  sum,
+  inArray,
+  ilike,
+} from "drizzle-orm";
 import { headers } from "next/headers";
 
 const parseSafeDate = (val: any) => {
@@ -21,9 +34,10 @@ const calculateSlaRate = (onTimeCount: number, lateCount: number) => {
 
 export async function getAllLogsForExport(selectedIds?: number[]) {
   try {
-    const conditions = selectedIds && selectedIds.length > 0 
-      ? inArray(maintenanceLogs.id, selectedIds) 
-      : undefined;
+    const conditions =
+      selectedIds && selectedIds.length > 0
+        ? inArray(maintenanceLogs.id, selectedIds)
+        : undefined;
 
     const data = await db.query.maintenanceLogs.findMany({
       where: conditions,
@@ -45,9 +59,9 @@ export async function getAllLogsForExport(selectedIds?: number[]) {
         locationLabel: true,
       },
       with: {
-        vehicle: { columns: { plate: true } }
+        vehicle: { columns: { plate: true } },
       },
-      orderBy: [desc(maintenanceLogs.reportedAt)]
+      orderBy: [desc(maintenanceLogs.reportedAt)],
     });
     return data;
   } catch (error) {
@@ -60,7 +74,7 @@ export async function searchVehicleByPlate(plate: string) {
   try {
     const v = await db.query.vehicles.findFirst({
       where: eq(vehicles.plate, plate),
-      with: { logs: { orderBy: [desc(maintenanceLogs.reportedAt)] } }
+      with: { logs: { orderBy: [desc(maintenanceLogs.reportedAt)] } },
     });
     return v || null;
   } catch (error) {
@@ -69,21 +83,44 @@ export async function searchVehicleByPlate(plate: string) {
   }
 }
 
-export async function getDashboardStats(options?: { dateRange?: string, customStart?: string, customEnd?: string }) {
+export async function getDashboardStats(options?: {
+  dateRange?: string;
+  customStart?: string;
+  customEnd?: string;
+}) {
   try {
     let dateFilter: any = undefined;
-    if (options && options.dateRange && options.dateRange !== 'all') {
+    if (options && options.dateRange && options.dateRange !== "all") {
       const now = new Date();
-      if (options.dateRange === 'custom' && options.customStart && options.customEnd) {
-        dateFilter = and(gte(maintenanceLogs.reportedAt, new Date(options.customStart)), lte(maintenanceLogs.reportedAt, new Date(options.customEnd)));
-      } else if (options.dateRange === '7d') {
-        dateFilter = gte(maintenanceLogs.reportedAt, new Date(now.setDate(now.getDate() - 7)));
-      } else if (options.dateRange === '30d') {
-        dateFilter = gte(maintenanceLogs.reportedAt, new Date(now.setDate(now.getDate() - 30)));
-      } else if (options.dateRange === '6m') {
-        dateFilter = gte(maintenanceLogs.reportedAt, new Date(now.setMonth(now.getMonth() - 6)));
-      } else if (options.dateRange === '1y') {
-        dateFilter = gte(maintenanceLogs.reportedAt, new Date(now.setFullYear(now.getFullYear() - 1)));
+      if (
+        options.dateRange === "custom" &&
+        options.customStart &&
+        options.customEnd
+      ) {
+        dateFilter = and(
+          gte(maintenanceLogs.reportedAt, new Date(options.customStart)),
+          lte(maintenanceLogs.reportedAt, new Date(options.customEnd)),
+        );
+      } else if (options.dateRange === "7d") {
+        dateFilter = gte(
+          maintenanceLogs.reportedAt,
+          new Date(now.setDate(now.getDate() - 7)),
+        );
+      } else if (options.dateRange === "30d") {
+        dateFilter = gte(
+          maintenanceLogs.reportedAt,
+          new Date(now.setDate(now.getDate() - 30)),
+        );
+      } else if (options.dateRange === "6m") {
+        dateFilter = gte(
+          maintenanceLogs.reportedAt,
+          new Date(now.setMonth(now.getMonth() - 6)),
+        );
+      } else if (options.dateRange === "1y") {
+        dateFilter = gte(
+          maintenanceLogs.reportedAt,
+          new Date(now.setFullYear(now.getFullYear() - 1)),
+        );
       }
     }
 
@@ -91,14 +128,26 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
 
     const query = db.select({ count: count() }).from(maintenanceLogs);
     if (whereClause) query.where(whereClause);
-    
-    const statusQuery = db.select({ status: maintenanceLogs.status, count: count(maintenanceLogs.id) }).from(maintenanceLogs);
+
+    const statusQuery = db
+      .select({
+        status: maintenanceLogs.status,
+        count: count(maintenanceLogs.id),
+      })
+      .from(maintenanceLogs);
     if (whereClause) statusQuery.where(whereClause);
-    
-    const priorityQuery = db.select({ priority: maintenanceLogs.priority, count: count(maintenanceLogs.id) }).from(maintenanceLogs);
+
+    const priorityQuery = db
+      .select({
+        priority: maintenanceLogs.priority,
+        count: count(maintenanceLogs.id),
+      })
+      .from(maintenanceLogs);
     if (whereClause) priorityQuery.where(whereClause);
-    
-    const costQuery = db.select({ sumCost: sum(maintenanceLogs.cost) }).from(maintenanceLogs);
+
+    const costQuery = db
+      .select({ sumCost: sum(maintenanceLogs.cost) })
+      .from(maintenanceLogs);
     if (whereClause) costQuery.where(whereClause);
 
     const sixMonthsAgo = new Date();
@@ -115,7 +164,7 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       priorityGroupsRaw,
       costAggRes,
       recentLogs,
-      allLogs
+      allLogs,
     ] = await Promise.all([
       db.select({ count: count() }).from(vehicles),
       query,
@@ -124,39 +173,65 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
       costQuery,
       db.query.maintenanceLogs.findMany({
         where: gte(maintenanceLogs.reportedAt, sixMonthsAgo),
-        columns: { reportedAt: true, cost: true }
+        columns: { reportedAt: true, cost: true },
       }),
       db.query.maintenanceLogs.findMany({
         where: whereClause,
-        columns: { 
-          id: true, status: true, priority: true, description: true, technicianName: true,
-          reportedAt: true, assignedAt: true, startedAt: true, completedAt: true, dueDate: true, teamName: true,
-          latitude: true, longitude: true, locationLabel: true, specialTools: true
+        columns: {
+          id: true,
+          status: true,
+          priority: true,
+          description: true,
+          technicianName: true,
+          reportedAt: true,
+          assignedAt: true,
+          startedAt: true,
+          completedAt: true,
+          dueDate: true,
+          teamName: true,
+          latitude: true,
+          longitude: true,
+          locationLabel: true,
+          specialTools: true,
         },
-        with: { vehicle: { columns: { plate: true } } }
-      })
+        with: { vehicle: { columns: { plate: true } } },
+      }),
     ]);
 
     const totalVehicles = totalVehiclesRes[0]?.count || 0;
     const totalLogs = totalLogsRes[0]?.count || 0;
-    const statusGroups = statusGroupsRaw.map(s => ({ _count: { id: s.count }, status: s.status }));
-    const priorityGroups = priorityGroupsRaw.map(p => ({ _count: { id: p.count }, priority: p.priority }));
-    const costAgg = { _sum: { cost: costAggRes[0]?.sumCost ? parseFloat(costAggRes[0].sumCost) : 0 } };
+    const statusGroups = statusGroupsRaw.map((s: any) => ({
+      _count: { id: s.count },
+      status: s.status,
+    }));
+    const priorityGroups = priorityGroupsRaw.map((p: any) => ({
+      _count: { id: p.count },
+      priority: p.priority,
+    }));
+    const costAgg = {
+      _sum: {
+        cost: costAggRes[0]?.sumCost ? parseFloat(costAggRes[0].sumCost) : 0,
+      },
+    };
 
     const monthlyMap = new Map();
     for (let i = 0; i < 6; i++) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
-      const monthLabel = d.toLocaleString('th-TH', { month: 'short' });
+      const monthLabel = d.toLocaleString("th-TH", { month: "short" });
       const yearLabel = d.getFullYear() + 543;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthlyMap.set(key, { label: `${monthLabel} ${String(yearLabel).substring(2)}`, count: 0, cost: 0 });
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthlyMap.set(key, {
+        label: `${monthLabel} ${String(yearLabel).substring(2)}`,
+        count: 0,
+        cost: 0,
+      });
     }
 
     for (const log of recentLogs) {
       if (!log.reportedAt) continue;
       const logDate = new Date(log.reportedAt);
-      const key = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
+      const key = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, "0")}`;
       if (monthlyMap.has(key)) {
         const current = monthlyMap.get(key);
         current.count += 1;
@@ -172,32 +247,48 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
     let responseCount = 0;
     let totalRepairTimeMs = 0;
     let repairCount = 0;
-    
+
     const teamMap = new Map();
 
     for (const log of allLogs) {
-      if (log.status === 'completed' && log.completedAt) {
+      if (log.status === "completed" && log.completedAt) {
         totalCompleted++;
         if (log.dueDate && new Date(log.completedAt) <= new Date(log.dueDate)) {
           onTimeCompleted++;
         }
       }
       if (log.reportedAt && log.assignedAt) {
-        const diff = new Date(log.assignedAt).getTime() - new Date(log.reportedAt).getTime();
-        if (diff >= 0) { totalResponseTimeMs += diff; responseCount++; }
+        const diff =
+          new Date(log.assignedAt).getTime() -
+          new Date(log.reportedAt).getTime();
+        if (diff >= 0) {
+          totalResponseTimeMs += diff;
+          responseCount++;
+        }
       }
-      if (log.status === 'completed' && log.startedAt && log.completedAt) {
-        const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
-        if (diff >= 0) { totalRepairTimeMs += diff; repairCount++; }
+      if (log.status === "completed" && log.startedAt && log.completedAt) {
+        const diff =
+          new Date(log.completedAt).getTime() -
+          new Date(log.startedAt).getTime();
+        if (diff >= 0) {
+          totalRepairTimeMs += diff;
+          repairCount++;
+        }
       }
       const rawTeam = log.teamName ? log.teamName.trim() : "";
       if (rawTeam !== "") {
         if (!teamMap.has(rawTeam)) {
           teamMap.set(rawTeam, {
-            name: rawTeam, totalJobs: 0, completedOnTime: 0, completedLate: 0, 
-            inProgress: 0, overdueActive: 0, totalRepairTimeMs: 0, repairCount: 0,
+            name: rawTeam,
+            totalJobs: 0,
+            completedOnTime: 0,
+            completedLate: 0,
+            inProgress: 0,
+            overdueActive: 0,
+            totalRepairTimeMs: 0,
+            repairCount: 0,
             techsMap: new Map(),
-            logs: [] 
+            logs: [],
           });
         }
         const wStats = teamMap.get(rawTeam);
@@ -216,109 +307,167 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
           latitude: log.latitude,
           longitude: log.longitude,
           locationLabel: log.locationLabel,
-          specialTools: log.specialTools
+          specialTools: log.specialTools,
         };
 
         wStats.logs.push(logDataForList);
 
-        if (log.status === 'completed') {
+        if (log.status === "completed") {
           if (log.dueDate && log.completedAt) {
-            if (new Date(log.completedAt) <= new Date(log.dueDate)) { wStats.completedOnTime++; } 
-            else { wStats.completedLate++; }
+            if (new Date(log.completedAt) <= new Date(log.dueDate)) {
+              wStats.completedOnTime++;
+            } else {
+              wStats.completedLate++;
+            }
           } else {
-            wStats.completedOnTime++; 
+            wStats.completedOnTime++;
           }
           if (log.startedAt && log.completedAt) {
-            const diff = new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime();
-            if (diff >= 0) { wStats.totalRepairTimeMs += diff; wStats.repairCount++; }
+            const diff =
+              new Date(log.completedAt).getTime() -
+              new Date(log.startedAt).getTime();
+            if (diff >= 0) {
+              wStats.totalRepairTimeMs += diff;
+              wStats.repairCount++;
+            }
           }
-        } else if (log.status === 'in_progress') {
+        } else if (log.status === "in_progress") {
           wStats.inProgress++;
         }
-        if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate) {
-          if (now > new Date(log.dueDate)) { wStats.overdueActive++; }
+        if (
+          log.status !== "completed" &&
+          log.status !== "cancelled" &&
+          log.dueDate
+        ) {
+          if (now > new Date(log.dueDate)) {
+            wStats.overdueActive++;
+          }
         }
 
         const rawTech = log.technicianName ? log.technicianName.trim() : "";
         if (rawTech !== "") {
           if (!wStats.techsMap.has(rawTech)) {
             wStats.techsMap.set(rawTech, {
-              name: rawTech, totalJobs: 0, completedOnTime: 0, completedLate: 0, inProgress: 0, overdueActive: 0
+              name: rawTech,
+              totalJobs: 0,
+              completedOnTime: 0,
+              completedLate: 0,
+              inProgress: 0,
+              overdueActive: 0,
             });
           }
           const tStats = wStats.techsMap.get(rawTech);
           tStats.totalJobs++;
-          if (log.status === 'completed') {
+          if (log.status === "completed") {
             if (log.dueDate && log.completedAt) {
-              if (new Date(log.completedAt) <= new Date(log.dueDate)) { tStats.completedOnTime++; }
-              else { tStats.completedLate++; }
+              if (new Date(log.completedAt) <= new Date(log.dueDate)) {
+                tStats.completedOnTime++;
+              } else {
+                tStats.completedLate++;
+              }
             } else {
               tStats.completedOnTime++;
             }
-          } else if (log.status === 'in_progress') {
+          } else if (log.status === "in_progress") {
             tStats.inProgress++;
           }
-          if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && now > new Date(log.dueDate)) {
+          if (
+            log.status !== "completed" &&
+            log.status !== "cancelled" &&
+            log.dueDate &&
+            now > new Date(log.dueDate)
+          ) {
             tStats.overdueActive++;
           }
         }
       }
     }
 
-    const efficiency = {
-      onTimeRate: totalCompleted > 0 ? Math.round((onTimeCompleted / totalCompleted) * 100) : 0,
-      avgResponseTimeHours: responseCount > 0 ? Math.round((totalResponseTimeMs / responseCount) / (1000 * 60 * 60) * 10) / 10 : 0,
-      avgRepairTimeHours: repairCount > 0 ? Math.round((totalRepairTimeMs / repairCount) / (1000 * 60 * 60) * 10) / 10 : 0,
-    };
-
     let overdueActiveCount = 0;
     for (const log of allLogs) {
-      if (log.status !== 'completed' && log.status !== 'cancelled' && log.dueDate && new Date(log.dueDate) < now) {
+      if (
+        log.status !== "completed" &&
+        log.status !== "cancelled" &&
+        log.dueDate &&
+        new Date(log.dueDate) < now
+      ) {
         overdueActiveCount++;
       }
     }
 
     const completedLateCount = totalCompleted - onTimeCompleted;
-    const onTimeRate = calculateSlaRate(onTimeCompleted, completedLateCount + overdueActiveCount);
+    const onTimeRate = calculateSlaRate(
+      onTimeCompleted,
+      completedLateCount + overdueActiveCount,
+    );
 
     const teamsData = Array.from(teamMap.values()).map((w: any) => {
       const lateCount = w.completedLate + w.overdueActive;
       const efficiencyRate = calculateSlaRate(w.completedOnTime, lateCount);
-      const avgRepairHoursW = w.repairCount > 0 ? (w.totalRepairTimeMs / (1000 * 60 * 60)) / w.repairCount : 0;
+      const avgRepairHoursW =
+        w.repairCount > 0
+          ? w.totalRepairTimeMs / (1000 * 60 * 60) / w.repairCount
+          : 0;
       return {
-        name: w.name, totalJobs: w.totalJobs, successCount: w.completedOnTime, 
-        lateCount, inProgressCount: w.inProgress, 
-        efficiencyRate: Math.round(efficiencyRate * 10) / 10, avgRepairHours: Math.round(avgRepairHoursW * 10) / 10,
-        logs: w.logs, 
+        name: w.name,
+        totalJobs: w.totalJobs,
+        successCount: w.completedOnTime,
+        lateCount,
+        inProgressCount: w.inProgress,
+        efficiencyRate: Math.round(efficiencyRate * 10) / 10,
+        avgRepairHours: Math.round(avgRepairHoursW * 10) / 10,
+        logs: w.logs,
         technicians: Array.from(w.techsMap.values()).map((t: any) => {
           const tLateCount = t.completedLate + t.overdueActive;
           const tEfficiency = calculateSlaRate(t.completedOnTime, tLateCount);
           return {
-            name: t.name, totalJobs: t.totalJobs, successCount: t.completedOnTime,
-            inProgressCount: t.inProgress, lateCount: tLateCount,
-            efficiencyRate: Math.round(tEfficiency * 10) / 10
+            name: t.name,
+            totalJobs: t.totalJobs,
+            successCount: t.completedOnTime,
+            inProgressCount: t.inProgress,
+            lateCount: tLateCount,
+            efficiencyRate: Math.round(tEfficiency * 10) / 10,
           };
-        })
+        }),
       };
     });
 
-    const avgResponseHours = responseCount > 0 ? (totalResponseTimeMs / (1000 * 60 * 60)) / responseCount : 0;
-    const avgRepairHours = repairCount > 0 ? (totalRepairTimeMs / (1000 * 60 * 60)) / repairCount : 0;
+    const avgResponseHours =
+      responseCount > 0
+        ? totalResponseTimeMs / (1000 * 60 * 60) / responseCount
+        : 0;
+    const avgRepairHours =
+      repairCount > 0 ? totalRepairTimeMs / (1000 * 60 * 60) / repairCount : 0;
 
     return {
-      totalVehicles, totalLogs,
-      statusCounts: statusGroups.map((s: any) => ({ status: s.status, count: s._count.id })),
-      priorityCounts: priorityGroups.map((p: any) => ({ priority: p.priority, count: p._count.id })),
+      totalVehicles,
+      totalLogs,
+      statusCounts: statusGroups.map((s: any) => ({
+        status: s.status,
+        count: s._count.id,
+      })),
+      priorityCounts: priorityGroups.map((p: any) => ({
+        priority: p.priority,
+        count: p._count.id,
+      })),
       totalCost: costAgg._sum.cost || 0,
       monthlyStats,
       efficiency: {
         onTimeRate: Math.round(onTimeRate * 10) / 10,
         avgResponseHours: Math.round(avgResponseHours * 10) / 10,
         avgRepairHours: Math.round(avgRepairHours * 10) / 10,
-        overdueActiveCount
+        overdueActiveCount,
       },
       teamsData,
-      allLogs: allLogs.map((l: any) => ({ ...l, vehiclePlate: l.vehicle?.plate || "ไม่ระบุ", reportedAt: l.reportedAt?.toISOString() || null, assignedAt: l.assignedAt?.toISOString() || null, startedAt: l.startedAt?.toISOString() || null, completedAt: l.completedAt?.toISOString() || null, dueDate: l.dueDate?.toISOString() || null }))
+      allLogs: allLogs.map((l: any) => ({
+        ...l,
+        vehiclePlate: l.vehicle?.plate || "ไม่ระบุ",
+        reportedAt: l.reportedAt?.toISOString() || null,
+        assignedAt: l.assignedAt?.toISOString() || null,
+        startedAt: l.startedAt?.toISOString() || null,
+        completedAt: l.completedAt?.toISOString() || null,
+        dueDate: l.dueDate?.toISOString() || null,
+      })),
     };
   } catch (error) {
     console.error("Stats Error:", error);
@@ -326,66 +475,80 @@ export async function getDashboardStats(options?: { dateRange?: string, customSt
   }
 }
 
-function notInArray(column: any, values: string[]) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { not, inArray } = require("drizzle-orm");
-  return not(inArray(column, values));
-}
-
 export async function importMaintenanceData(rows: any[]) {
   try {
-    const cleanRows = rows.map(row => {
+    const cleanRows = rows.map((row) => {
       const cleanRow: any = {};
       for (const key of Object.keys(row)) {
-        const cleanKey = key.replace(/^\uFEFF/, '').trim();
+        const cleanKey = key.replace(/^\uFEFF/, "").trim();
         cleanRow[cleanKey] = row[key];
       }
       return cleanRow;
     });
 
-    const validRows = cleanRows.filter(r => r.plate);
-    if (validRows.length === 0) return { success: false, message: "ไม่พบข้อมูลรถในไฟล์" };
+    const validRows = cleanRows.filter((r) => r.plate);
+    if (validRows.length === 0)
+      return { success: false, message: "ไม่พบข้อมูลรถในไฟล์" };
 
-    const uniquePlates = [...new Set(validRows.map(r => String(r.plate).trim()))];
-    let existingVehicles = await db.query.vehicles.findMany({ where: inArray(vehicles.plate, uniquePlates) });
+    const uniquePlates = [
+      ...new Set(validRows.map((r) => String(r.plate).trim())),
+    ];
+    let existingVehicles = await db.query.vehicles.findMany({
+      where: inArray(vehicles.plate, uniquePlates),
+    });
     const existingPlates = new Set(existingVehicles.map((v: any) => v.plate));
 
     const vehiclesToCreate = [];
-    const seenNewPlates = new Set(); 
+    const seenNewPlates = new Set();
     for (const row of validRows) {
       const plate = String(row.plate).trim();
       if (!existingPlates.has(plate) && !seenNewPlates.has(plate)) {
-        vehiclesToCreate.push({ plate: plate, brand: row.brand ? String(row.brand).trim() : null, model: row.model ? String(row.model).trim() : null });
+        vehiclesToCreate.push({
+          plate: plate,
+          brand: row.brand ? String(row.brand).trim() : null,
+          model: row.model ? String(row.model).trim() : null,
+        });
         seenNewPlates.add(plate);
       }
     }
 
     if (vehiclesToCreate.length > 0) {
-      await db.insert(vehicles).values(vehiclesToCreate).onConflictDoNothing({ target: vehicles.plate });
-      existingVehicles = await db.query.vehicles.findMany({ where: inArray(vehicles.plate, uniquePlates) });
+      await db
+        .insert(vehicles)
+        .values(vehiclesToCreate)
+        .onConflictDoNothing({ target: vehicles.plate });
+      existingVehicles = await db.query.vehicles.findMany({
+        where: inArray(vehicles.plate, uniquePlates),
+      });
     }
 
     const plateToIdMap = new Map();
-    for (const v of existingVehicles as any[]) { plateToIdMap.set(v.plate, v.id); }
+    for (const v of existingVehicles as any[]) {
+      plateToIdMap.set(v.plate, v.id);
+    }
 
     const logsToCreate = [];
     for (const row of validRows) {
-      if (!row.description) continue; 
+      if (!row.description) continue;
       const vehicleId = plateToIdMap.get(String(row.plate).trim());
-      if (!vehicleId) continue; 
+      if (!vehicleId) continue;
 
       logsToCreate.push({
         vehicleId: vehicleId,
         projectId: row.projectId ? parseInt(row.projectId) : null,
         projectName: row.projectName ? String(row.projectName).trim() : null,
         teamName: row.teamName ? String(row.teamName).trim() : null,
-        technicianName: row.technicianName ? String(row.technicianName).trim() : null,
+        technicianName: row.technicianName
+          ? String(row.technicianName).trim()
+          : null,
         priority: row.priority ? String(row.priority).trim() : "normal",
         status: row.status ? String(row.status).trim() : "reported",
         category: row.category ? String(row.category).trim() : null,
         description: String(row.description).trim(),
         symptoms: row.symptoms ? String(row.symptoms).trim() : null,
-        locationLabel: row.locationLabel ? String(row.locationLabel).trim() : null,
+        locationLabel: row.locationLabel
+          ? String(row.locationLabel).trim()
+          : null,
         latitude: row.latitude ? parseFloat(row.latitude) : null,
         longitude: row.longitude ? parseFloat(row.longitude) : null,
         cost: row.cost ? parseFloat(row.cost) : null,
@@ -403,7 +566,13 @@ export async function importMaintenanceData(rows: any[]) {
     }
     return { success: true, message: `นำเข้าข้อมูลสำเร็จ` };
   } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึกข้อมูล" };
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+    };
   }
 }
 
@@ -414,30 +583,36 @@ export async function searchDashboardData(query: string) {
     const searchTerm = query.trim();
 
     const parsedId = parseInt(searchTerm, 10);
-    
-    const plateLogsRaw = await db.select({ logId: maintenanceLogs.id }).from(maintenanceLogs)
+
+    const plateLogsRaw = await db
+      .select({ logId: maintenanceLogs.id })
+      .from(maintenanceLogs)
       .leftJoin(vehicles, eq(maintenanceLogs.vehicleId, vehicles.id))
-      .where(or(
-        ilike(vehicles.plate, `%${searchTerm}%`),
-        ilike(maintenanceLogs.description, `%${searchTerm}%`),
-        ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
-        ilike(maintenanceLogs.teamName, `%${searchTerm}%`),
-        !isNaN(parsedId) ? eq(maintenanceLogs.id, parsedId) : undefined
-      ))
+      .where(
+        or(
+          ilike(vehicles.plate, `%${searchTerm}%`),
+          ilike(maintenanceLogs.description, `%${searchTerm}%`),
+          ilike(maintenanceLogs.technicianName, `%${searchTerm}%`),
+          ilike(maintenanceLogs.teamName, `%${searchTerm}%`),
+          !isNaN(parsedId) ? eq(maintenanceLogs.id, parsedId) : undefined,
+        ),
+      )
       .orderBy(desc(maintenanceLogs.reportedAt));
-      
-    const logIds = [...new Set(plateLogsRaw.map(l => l.logId))];
-    
+
+    const logIds: number[] = [
+      ...new Set(plateLogsRaw.map((l: any) => l.logId as number)),
+    ];
+
     let logsFull: any[] = [];
     if (logIds.length > 0) {
       logsFull = await db.query.maintenanceLogs.findMany({
         where: inArray(maintenanceLogs.id, logIds),
         with: { vehicle: { columns: { plate: true } } },
-        orderBy: [desc(maintenanceLogs.reportedAt)]
+        orderBy: [desc(maintenanceLogs.reportedAt)],
       });
     }
 
-    const formattedLogs = logsFull.map(log => ({
+    const formattedLogs = logsFull.map((log) => ({
       id: log.id,
       maintenanceLogId: log.id,
       vehiclePlate: log.vehicle?.plate || "ไม่ระบุ",
@@ -453,16 +628,28 @@ export async function searchDashboardData(query: string) {
     const teamMap = new Map();
     const technicianMap = new Map();
 
-    formattedLogs.forEach(log => {
+    formattedLogs.forEach((log) => {
       if (log.teamName !== "ไม่ระบุ") {
         if (!teamMap.has(log.teamName)) {
-          teamMap.set(log.teamName, { name: log.teamName, totalJobs: 0, successCount: 0, lateCount: 0, efficiencyRate: 100 });
+          teamMap.set(log.teamName, {
+            name: log.teamName,
+            totalJobs: 0,
+            successCount: 0,
+            lateCount: 0,
+            efficiencyRate: 100,
+          });
         }
         teamMap.get(log.teamName).totalJobs++;
       }
       if (log.technicianName !== "ไม่ระบุ") {
         if (!technicianMap.has(log.technicianName)) {
-          technicianMap.set(log.technicianName, { name: log.technicianName, totalJobs: 0, successCount: 0, lateCount: 0, efficiencyRate: 100 });
+          technicianMap.set(log.technicianName, {
+            name: log.technicianName,
+            totalJobs: 0,
+            successCount: 0,
+            lateCount: 0,
+            efficiencyRate: 100,
+          });
         }
         technicianMap.get(log.technicianName).totalJobs++;
       }
@@ -473,9 +660,8 @@ export async function searchDashboardData(query: string) {
       Teams: Array.from(teamMap.values()),
       technicians: Array.from(technicianMap.values()),
       logs: formattedLogs,
-      total: formattedLogs.length
+      total: formattedLogs.length,
     };
-
   } catch (error) {
     console.error("Search Error:", error);
     return null;
@@ -486,15 +672,20 @@ export async function deleteDataByYear(yearString: string) {
   try {
     const year = parseInt(yearString, 10);
     if (isNaN(year)) throw new Error("Invalid year");
-    
+
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31, 23, 59, 59, 999);
-    
-    const result = await db.delete(maintenanceLogs).where(and(
-      gte(maintenanceLogs.reportedAt, startDate),
-      lte(maintenanceLogs.reportedAt, endDate)
-    )).returning({ id: maintenanceLogs.id });
-    
+
+    const result = await db
+      .delete(maintenanceLogs)
+      .where(
+        and(
+          gte(maintenanceLogs.reportedAt, startDate),
+          lte(maintenanceLogs.reportedAt, endDate),
+        ),
+      )
+      .returning({ id: maintenanceLogs.id });
+
     return { success: true, count: result.length };
   } catch (error) {
     console.error("Delete by year error:", error);
@@ -504,39 +695,54 @@ export async function deleteDataByYear(yearString: string) {
 
 export async function resetDatabase() {
   try {
-    const logsResult = await db.delete(maintenanceLogs).returning({ id: maintenanceLogs.id });
-    const vehiclesResult = await db.delete(vehicles).returning({ id: vehicles.id });
-    
-    return { success: true, logsCount: logsResult.length, vehiclesCount: vehiclesResult.length };
+    const logsResult = await db
+      .delete(maintenanceLogs)
+      .returning({ id: maintenanceLogs.id });
+    const vehiclesResult = await db
+      .delete(vehicles)
+      .returning({ id: vehicles.id });
+
+    return {
+      success: true,
+      logsCount: logsResult.length,
+      vehiclesCount: vehiclesResult.length,
+    };
   } catch (error) {
     console.error("Reset database error:", error);
     return { success: false, error: "เกิดข้อผิดพลาดในการรีเซ็ตฐานข้อมูล" };
   }
 }
 
-export async function updateMaintenanceLog(id: number, data: any, editedBy: string, latitude?: number | null, longitude?: number | null) {
+export async function updateMaintenanceLog(
+  id: number,
+  data: any,
+  editedBy: string,
+  latitude?: number | null,
+  longitude?: number | null,
+) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     // revalidatePath imported at top
     const headersList = await headers();
-    const forwardedFor = headersList.get('x-forwarded-for');
-    const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : (headersList.get('x-real-ip') || 'Unknown IP');
-
-    const { revalidatePath } = require('next/cache');
+    const forwardedFor = headersList.get("x-forwarded-for");
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0]
+      : headersList.get("x-real-ip") || "Unknown IP";
     const updateData = { ...data };
-    
-    if (updateData.status === 'completed' && !updateData.completedAt) {
+
+    if (updateData.status === "completed" && !updateData.completedAt) {
       updateData.completedAt = new Date();
     }
-    
-    if (updateData.dueDate && typeof updateData.dueDate === 'string') {
+
+    if (updateData.dueDate && typeof updateData.dueDate === "string") {
       updateData.dueDate = parseSafeDate(updateData.dueDate);
     }
 
-    await db.update(maintenanceLogs)
+    await db
+      .update(maintenanceLogs)
       .set(updateData)
       .where(eq(maintenanceLogs.id, id));
-      
+
     await db.insert(maintenanceHistoryLogs).values({
       maintenanceLogId: id,
       action: "update",
@@ -547,8 +753,8 @@ export async function updateMaintenanceLog(id: number, data: any, editedBy: stri
       editorLongitude: longitude || null,
       editedAt: new Date(),
     });
-      
-    revalidatePath('/');
+
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     console.error("Failed to update log:", error);
@@ -562,7 +768,7 @@ export async function getHistoryByLogId(logId: number) {
       where: eq(maintenanceHistoryLogs.maintenanceLogId, logId),
       orderBy: [desc(maintenanceHistoryLogs.editedAt)],
     });
-    return history.map(h => ({
+    return history.map((h: any) => ({
       ...h,
       editedAt: h.editedAt.toISOString(),
     }));
@@ -572,39 +778,52 @@ export async function getHistoryByLogId(logId: number) {
   }
 }
 
-export async function createMaintenanceLog(data: any, createdBy: string, latitude?: number | null, longitude?: number | null) {
+export async function createMaintenanceLog(
+  data: any,
+  createdBy: string,
+  latitude?: number | null,
+  longitude?: number | null,
+) {
   try {
     const headersList = await headers();
-    const forwardedFor = headersList.get('x-forwarded-for');
-    const ipAddress = forwardedFor ? forwardedFor.split(',')[0] : (headersList.get('x-real-ip') || 'Unknown IP');
+    const forwardedFor = headersList.get("x-forwarded-for");
+    const ipAddress = forwardedFor
+      ? forwardedFor.split(",")[0]
+      : headersList.get("x-real-ip") || "Unknown IP";
 
-    const { revalidatePath } = require('next/cache');
+    // revalidatePath imported at top
 
     let vehicleId;
     const existingVehicle = await db.query.vehicles.findFirst({
-      where: eq(vehicles.plate, data.vehiclePlate)
+      where: eq(vehicles.plate, data.vehiclePlate),
     });
-    
+
     if (existingVehicle) {
       vehicleId = existingVehicle.id;
     } else {
-      const [newVehicle] = await db.insert(vehicles).values({
-        plate: data.vehiclePlate
-      }).returning({ id: vehicles.id });
+      const [newVehicle] = await db
+        .insert(vehicles)
+        .values({
+          plate: data.vehiclePlate,
+        })
+        .returning({ id: vehicles.id });
       vehicleId = newVehicle.id;
     }
 
-    const [newLog] = await db.insert(maintenanceLogs).values({
-      vehicleId: vehicleId,
-      status: data.status || 'reported',
-      priority: data.priority || 'normal',
-      teamName: data.teamName || null,
-      technicianName: data.technicianName || null,
-      description: data.description || null,
-      cost: data.cost ? parseFloat(data.cost) : null,
-      specialTools: data.specialTools || null,
-      reportedAt: new Date(),
-    }).returning({ id: maintenanceLogs.id });
+    const [newLog] = await db
+      .insert(maintenanceLogs)
+      .values({
+        vehicleId: vehicleId,
+        status: data.status || "reported",
+        priority: data.priority || "normal",
+        teamName: data.teamName || null,
+        technicianName: data.technicianName || null,
+        description: data.description || null,
+        cost: data.cost ? parseFloat(data.cost) : null,
+        specialTools: data.specialTools || null,
+        reportedAt: new Date(),
+      })
+      .returning({ id: maintenanceLogs.id });
 
     await db.insert(maintenanceHistoryLogs).values({
       maintenanceLogId: newLog.id,
@@ -617,7 +836,7 @@ export async function createMaintenanceLog(data: any, createdBy: string, latitud
       editedAt: new Date(),
     });
 
-    revalidatePath('/');
+    revalidatePath("/");
     return { success: true, logId: newLog.id };
   } catch (error) {
     console.error("Failed to create maintenance log:", error);

@@ -142,12 +142,8 @@
           "name": "MaintenanceLog_vehicleId_Vehicle_id_fk",
           "tableFrom": "MaintenanceLog",
           "tableTo": "Vehicle",
-          "columnsFrom": [
-            "vehicleId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vehicleId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -194,9 +190,7 @@
         "Vehicle_plate_key": {
           "name": "Vehicle_plate_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "plate"
-          ]
+          "columns": ["plate"]
         }
       },
       "policies": {},

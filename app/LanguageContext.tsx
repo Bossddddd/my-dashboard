@@ -9,18 +9,19 @@ interface LanguageContextType {
   t: (key: TranslationKey) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
-export function LanguageProvider({ 
-  children, 
-  language, 
-  setLanguage 
-}: { 
-  children: ReactNode; 
-  language: string; 
-  setLanguage: (lang: string) => void; 
+export function LanguageProvider({
+  children,
+  language,
+  setLanguage,
+}: {
+  children: ReactNode;
+  language: string;
+  setLanguage: (lang: string) => void;
 }) {
-  
   const t = (key: TranslationKey) => getTranslation(language, key);
 
   return (
@@ -35,9 +36,9 @@ export function useLanguage() {
   if (!context) {
     // Return a dummy context if used outside provider (shouldn't happen)
     return {
-      language: 'th',
+      language: "th",
       setLanguage: () => {},
-      t: (key: TranslationKey) => getTranslation('th', key)
+      t: (key: TranslationKey) => getTranslation("th", key),
     };
   }
   return context;

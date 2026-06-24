@@ -7,8 +7,8 @@ export interface MaintenanceLog {
   locationLabel?: string;
   latitude?: number | null;
   longitude?: number | null;
-  priority: string; 
-  status: string;   
+  priority: string;
+  status: string;
   description: string;
   reportedAt?: string | null;
   dueDate?: string | null;

@@ -1,9 +1,19 @@
-import { pgTable, serial, varchar, text, integer, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  varchar,
+  text,
+  integer,
+  timestamp,
+  doublePrecision,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const vehicles = pgTable("Vehicle", {
   id: serial("id").primaryKey(),
-  plate: varchar("plate", { length: 255 }).notNull().unique("Vehicle_plate_key"),
+  plate: varchar("plate", { length: 255 })
+    .notNull()
+    .unique("Vehicle_plate_key"),
   brand: varchar("brand", { length: 255 }),
   model: varchar("model", { length: 255 }),
 });
@@ -34,20 +44,27 @@ export const maintenanceLogs = pgTable("MaintenanceLog", {
   completedAt: timestamp("completedAt"),
   dueDate: timestamp("dueDate"),
   cost: doublePrecision("cost"),
-  vehicleId: integer("vehicleId").notNull().references(() => vehicles.id, { onDelete: "cascade" }),
+  vehicleId: integer("vehicleId")
+    .notNull()
+    .references(() => vehicles.id, { onDelete: "cascade" }),
 });
 
-export const maintenanceLogsRelations = relations(maintenanceLogs, ({ one, many }) => ({
-  vehicle: one(vehicles, {
-    fields: [maintenanceLogs.vehicleId],
-    references: [vehicles.id],
+export const maintenanceLogsRelations = relations(
+  maintenanceLogs,
+  ({ one, many }) => ({
+    vehicle: one(vehicles, {
+      fields: [maintenanceLogs.vehicleId],
+      references: [vehicles.id],
+    }),
+    historyLogs: many(maintenanceHistoryLogs),
   }),
-  historyLogs: many(maintenanceHistoryLogs),
-}));
+);
 
 export const maintenanceHistoryLogs = pgTable("MaintenanceHistoryLog", {
   id: serial("id").primaryKey(),
-  maintenanceLogId: integer("maintenanceLogId").notNull().references(() => maintenanceLogs.id, { onDelete: "cascade" }),
+  maintenanceLogId: integer("maintenanceLogId")
+    .notNull()
+    .references(() => maintenanceLogs.id, { onDelete: "cascade" }),
   action: varchar("action", { length: 50 }).notNull(),
   editedBy: varchar("editedBy", { length: 255 }).notNull(),
   changes: text("changes"),
@@ -57,9 +74,12 @@ export const maintenanceHistoryLogs = pgTable("MaintenanceHistoryLog", {
   editedAt: timestamp("editedAt").defaultNow().notNull(),
 });
 
-export const maintenanceHistoryLogsRelations = relations(maintenanceHistoryLogs, ({ one }) => ({
-  maintenanceLog: one(maintenanceLogs, {
-    fields: [maintenanceHistoryLogs.maintenanceLogId],
-    references: [maintenanceLogs.id],
+export const maintenanceHistoryLogsRelations = relations(
+  maintenanceHistoryLogs,
+  ({ one }) => ({
+    maintenanceLog: one(maintenanceLogs, {
+      fields: [maintenanceHistoryLogs.maintenanceLogId],
+      references: [maintenanceLogs.id],
+    }),
   }),
-}));
+);

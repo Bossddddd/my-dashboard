@@ -14,17 +14,16 @@ export default function Navbar({ onSearch }: NavbarProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    
+
     // เรียกใช้ฟังก์ชันค้นหาที่ส่งมาจาก page.tsx
     onSearch(searchQuery.trim());
   };
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm z-10">
-      
       {/* โลโก้ / ชื่อโปรเจกต์ (ปรับเป็นลิงก์เพื่อให้กดกลับหน้า Home ได้) */}
-      <Link 
-        href="/" 
+      <Link
+        href="/"
         className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-2"
         title="กลับหน้าหลัก"
       >
@@ -33,10 +32,9 @@ export default function Navbar({ onSearch }: NavbarProps) {
           DEV VERSION
         </span>
       </Link>
-      
+
       {/* พื้นที่ด้านขวา: ช่องค้นหา + ปุ่มนำเข้าไฟล์ */}
       <div className="flex items-center gap-4">
-        
         {/* ฟอร์มค้นหา */}
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <input
@@ -59,9 +57,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
 
         {/* ปุ่มนำเข้า Excel/CSV */}
         <ImportButton />
-
       </div>
-
     </header>
   );
 }

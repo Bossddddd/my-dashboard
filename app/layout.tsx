@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "EVT Admin Panel",
   description: "ระบบจัดการซ่อมบำรุงยานพาหนะ",
   icons: {
-    icon: '/icon.svg',
+    icon: "/icon.svg",
   },
 };
 
@@ -24,14 +24,19 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <SpeedInsights />
-        <Toaster 
-          position="top-right" 
+        <Toaster
+          position="top-right"
           toastOptions={{
             duration: 3000,
-            style: { background: '#333', color: '#fff', fontSize: '14px', borderRadius: '8px' },
-            success: { style: { background: '#059669' } },
-            error: { style: { background: '#e11d48' } },
-          }} 
+            style: {
+              background: "#333",
+              color: "#fff",
+              fontSize: "14px",
+              borderRadius: "8px",
+            },
+            success: { style: { background: "#059669" } },
+            error: { style: { background: "#e11d48" } },
+          }}
         />
       </body>
     </html>

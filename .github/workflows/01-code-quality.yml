@@ -1,0 +1,33 @@
+name: 1. Code Quality Checks
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  quality-checks:
+    name: 🛡️ Quality Pipeline (Sequential)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Pull code from GitHub
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Install Node v20 & npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Download packages (package-lock.json)
+        run: npm ci
+
+      - name: 🧹 Check code syntax & style rules (ESLint)
+        run: npx eslint .
+
+      - name: 🏷️ Strict TypeScript type validation (tsc)
+        run: npx tsc --noEmit
+
+      - name: 🧪 Execute Vitest components testing
+        run: npm run test:coverage

@@ -7,7 +7,13 @@ import { getAllLogsForExport } from "../app/actions";
 import { formatDateTime } from "./formatters";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "../lib/constants";
 
-export default function ExportButton({ selectedIds = [], fileNamePrefix = "maintenance_export" }: { selectedIds?: number[], fileNamePrefix?: string }) {
+export default function ExportButton({
+  selectedIds = [],
+  fileNamePrefix = "maintenance_export",
+}: {
+  selectedIds?: number[];
+  fileNamePrefix?: string;
+}) {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -25,17 +31,17 @@ export default function ExportButton({ selectedIds = [], fileNamePrefix = "maint
       // Transform data to fit nicely in Excel
       const exportData = data.map((log: any) => ({
         "รหัสใบงาน (ID)": log.id,
-        "ทะเบียนรถ": log.vehicle?.plate || "-",
-        "สถานะ": STATUS_CONFIG[log.status]?.text || log.status,
-        "ความเร่งด่วน": PRIORITY_CONFIG[log.priority]?.text || log.priority,
+        ทะเบียนรถ: log.vehicle?.plate || "-",
+        สถานะ: STATUS_CONFIG[log.status]?.text || log.status,
+        ความเร่งด่วน: PRIORITY_CONFIG[log.priority]?.text || log.priority,
         "ทีมช่าง (Team)": log.teamName || "-",
-        "ช่างผู้รับผิดชอบ": log.technicianName || "-",
+        ช่างผู้รับผิดชอบ: log.technicianName || "-",
         "รายละเอียด/อาการ": log.description || "-",
         "ค่าใช้จ่าย (บาท)": log.cost || 0,
-        "เวลาแจ้งซ่อม": formatDateTime(log.reportedAt),
-        "เวลาเริ่มงาน": formatDateTime(log.startedAt),
-        "เวลาทำงานเสร็จ": formatDateTime(log.completedAt),
-        "กำหนดเสร็จตาม SLA": formatDateTime(log.dueDate)
+        เวลาแจ้งซ่อม: formatDateTime(log.reportedAt),
+        เวลาเริ่มงาน: formatDateTime(log.startedAt),
+        เวลาทำงานเสร็จ: formatDateTime(log.completedAt),
+        "กำหนดเสร็จตาม SLA": formatDateTime(log.dueDate),
       }));
 
       // Create a new workbook and worksheet
@@ -44,7 +50,7 @@ export default function ExportButton({ selectedIds = [], fileNamePrefix = "maint
       XLSX.utils.book_append_sheet(workbook, worksheet, "Maintenance Logs");
 
       // Generate excel file and trigger download
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       XLSX.writeFile(workbook, `${fileNamePrefix}_${today}.xlsx`);
 
       toast.success(`ส่งออกสำเร็จ (${data.length} รายการ)`, { id: toastId });
@@ -61,7 +67,9 @@ export default function ExportButton({ selectedIds = [], fileNamePrefix = "maint
       onClick={handleExport}
       disabled={isExporting}
       className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition-colors shadow-xs ${
-        isExporting ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"
+        isExporting
+          ? "bg-gray-400 cursor-not-allowed"
+          : "bg-emerald-600 hover:bg-emerald-700"
       }`}
     >
       {isExporting ? "⏳ กำลังส่งออก..." : "นำออกข้อมูล (Excel)"}
