@@ -42,7 +42,8 @@ export const translations = {
     languageDesc: "เลือกภาษาที่ใช้ในแดชบอร์ดซ่อมบำรุง",
     dataAnalytics: "ข้อมูลและการวิเคราะห์ (Data & Analytics)",
     defaultDateRange: "ช่วงเวลาเริ่มต้น (Default Date Range)",
-    defaultDateRangeDesc: "กำหนดช่วงเวลาดึงข้อมูลค่าเริ่มต้นเมื่อเปิดหน้าแดชบอร์ด",
+    defaultDateRangeDesc:
+      "กำหนดช่วงเวลาดึงข้อมูลค่าเริ่มต้นเมื่อเปิดหน้าแดชบอร์ด",
     date7d: "7 วันล่าสุด",
     date30d: "30 วันล่าสุด",
     date6m: "6 เดือนล่าสุด",
@@ -52,18 +53,21 @@ export const translations = {
     dateFrom: "ตั้งแต่วันที่:",
     dateTo: "ถึงวันที่:",
     slaTarget: "เป้าหมาย SLA การซ่อมบำรุง (%)",
-    slaTargetDesc: "ใช้เกณฑ์นี้ประเมินทีมช่างและทีมช่างว่ามีประสิทธิภาพในระดับดีเยี่ยม",
+    slaTargetDesc:
+      "ใช้เกณฑ์นี้ประเมินทีมช่างและทีมช่างว่ามีประสิทธิภาพในระดับดีเยี่ยม",
     notifications: "การแจ้งเตือน (Notifications)",
     lineToken: "LINE Notify Token",
     lineTokenDesc: "โทเคนสำหรับการส่งแจ้งเตือนใบงานล่าช้าผ่านทาง LINE",
     lineTokenPlaceholder: "กรอก LINE Token (เช่น abcdefg1234567)",
     dangerZone: "จัดการฐานข้อมูล (Danger Zone)",
     deleteByYear: "ลบข้อมูลแบบระบุปี",
-    deleteByYearDesc: "เลือกลบประวัติการซ่อมบำรุงเฉพาะปีที่ไม่ได้ใช้งานแล้ว เพื่อเพิ่มพื้นที่จัดเก็บ (ข้อมูลจะหายถาวร)",
+    deleteByYearDesc:
+      "เลือกลบประวัติการซ่อมบำรุงเฉพาะปีที่ไม่ได้ใช้งานแล้ว เพื่อเพิ่มพื้นที่จัดเก็บ (ข้อมูลจะหายถาวร)",
     yearDataPrefix: "ข้อมูลปี",
     deleteButton: "ลบข้อมูล",
     resetDatabase: "รีเซ็ตฐานข้อมูลทั้งหมด",
-    resetDatabaseDesc: "ลบข้อมูลรถ, ทีมช่าง, ช่าง, และใบงานทั้งหมดในระบบ (ข้อมูลจะหายถาวร)",
+    resetDatabaseDesc:
+      "ลบข้อมูลรถ, ทีมช่าง, ช่าง, และใบงานทั้งหมดในระบบ (ข้อมูลจะหายถาวร)",
     resetButton: "รีเซ็ตข้อมูลทั้งหมด",
     confirmAction: "ยืนยันการทำรายการ",
     confirmDeleteYear: "คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทั้งหมดของปี",
@@ -71,7 +75,7 @@ export const translations = {
     cannotUndo: "การกระทำนี้ไม่สามารถกู้คืนได้",
     cancel: "ยกเลิก",
     confirmDelete: "ยืนยันการลบ",
-    
+
     // Dashboard Tab
     searchPlaceholder: "ค้นหาด้วยเลขทะเบียนรถ, อาการ หรือชื่อช่าง...",
     searchButton: "ค้นหาข้อมูล",
@@ -94,7 +98,7 @@ export const translations = {
     statusSummaryTitle: "สรุปตามสถานะงานซ่อม (Status)",
     prioritySummaryTitle: "สรุปตามความเร่งด่วน (Priority)",
     overdueListTitle: "รายการแจ้งซ่อมที่เกินกำหนด",
-    
+
     // teams Tab
     backToAllteams: "กลับไปตารางทีมช่างทั้งหมด",
     successJobs: "งานสำเร็จ",
@@ -119,7 +123,7 @@ export const translations = {
     teamDirectory: "ตารางทำเนียบรายชื่อทีมช่าง/ศูนย์บริการซ่อมบำรุง",
     teamNameCol: "ชื่อทีมช่าง",
     totalAccumulatedCol: "สะสม",
-    
+
     // Technicians Tab
     backToAllTechs: "กลับไปตารางช่างทั้งหมด",
     techLogHistory: "รายการประวัติใบงานทั้งหมดภายใต้ความรับผิดชอบ",
@@ -134,7 +138,7 @@ export const translations = {
     orderCol: "ลำดับ",
     techNameCol: "ชื่อช่าง",
     totalCol: "ทั้งหมด",
-    
+
     // Header & Layout
     historyLog: "ประวัติรถ",
     teamTitle: "ทีมช่าง:",
@@ -160,7 +164,7 @@ export const translations = {
     noDesc: "ไม่มีคำอธิบายระบุข้อมูลเพิ่มเติม",
     reportedAtLabel: "วันที่แจ้งซ่อม:",
     dueDateLabel: "กำหนดเสร็จสิ้น:",
-    
+
     // Badges func
     successText: "สำเร็จ",
     pendingText: "รอดำเนินการ",
@@ -210,7 +214,8 @@ export const translations = {
     languageDesc: "Select the language used in the maintenance dashboard",
     dataAnalytics: "Data & Analytics",
     defaultDateRange: "Default Date Range",
-    defaultDateRangeDesc: "Set the default date range when opening the dashboard",
+    defaultDateRangeDesc:
+      "Set the default date range when opening the dashboard",
     date7d: "Last 7 Days",
     date30d: "Last 30 Days",
     date6m: "Last 6 Months",
@@ -227,11 +232,13 @@ export const translations = {
     lineTokenPlaceholder: "Enter LINE Token (e.g., abcdefg1234567)",
     dangerZone: "Danger Zone",
     deleteByYear: "Delete Data by Year",
-    deleteByYearDesc: "Remove old maintenance records to free up space (cannot be undone)",
+    deleteByYearDesc:
+      "Remove old maintenance records to free up space (cannot be undone)",
     yearDataPrefix: "Data of",
     deleteButton: "Delete Data",
     resetDatabase: "Reset Entire Database",
-    resetDatabaseDesc: "Delete all vehicles, teams, technicians, and logs (cannot be undone)",
+    resetDatabaseDesc:
+      "Delete all vehicles, teams, technicians, and logs (cannot be undone)",
     resetButton: "Reset Everything",
     confirmAction: "Confirm Action",
     confirmDeleteYear: "Are you sure you want to delete all data for the year",
@@ -239,7 +246,7 @@ export const translations = {
     cannotUndo: "This action cannot be undone.",
     cancel: "Cancel",
     confirmDelete: "Confirm Delete",
-    
+
     // Dashboard Tab
     searchPlaceholder: "Search by plate, description, or technician...",
     searchButton: "Search",
@@ -262,7 +269,7 @@ export const translations = {
     statusSummaryTitle: "Summary by Status",
     prioritySummaryTitle: "Summary by Priority",
     overdueListTitle: "Overdue Maintenance Jobs",
-    
+
     // teams Tab
     backToAllteams: "Back to All teams",
     successJobs: "Completed",
@@ -287,7 +294,7 @@ export const translations = {
     teamDirectory: "team Directory",
     teamNameCol: "team Name",
     totalAccumulatedCol: "Total Jobs",
-    
+
     // Technicians Tab
     backToAllTechs: "Back to All Technicians",
     techLogHistory: "Job History under Responsibility",
@@ -302,7 +309,7 @@ export const translations = {
     orderCol: "No.",
     techNameCol: "Tech Name",
     totalCol: "Total",
-    
+
     // Header & Layout
     historyLog: "History",
     teamTitle: "team:",
@@ -328,19 +335,21 @@ export const translations = {
     noDesc: "No additional description provided",
     reportedAtLabel: "Reported At:",
     dueDateLabel: "Due Date:",
-    
+
     // Badges func
     successText: "Success",
     pendingText: "Pending",
     progressText: "In Progress",
     lateText: "Late",
-  }
+  },
 };
 
-export type Language = 'th' | 'en';
-export type TranslationKey = keyof typeof translations['th'];
+export type Language = "th" | "en";
+export type TranslationKey = keyof (typeof translations)["th"];
 
 export function getTranslation(lang: string, key: TranslationKey): string {
-  const selectedLang = (translations as Record<string, typeof translations['th']>)[lang] || translations['th'];
-  return selectedLang[key] || translations['th'][key] || key;
+  const selectedLang =
+    (translations as Record<string, (typeof translations)["th"]>)[lang] ||
+    translations["th"];
+  return selectedLang[key] || translations["th"][key] || key;
 }

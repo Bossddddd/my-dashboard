@@ -21,29 +21,33 @@ export default function ImportButton() {
     const processData = async (bufferOrString: string | ArrayBuffer) => {
       try {
         const isString = typeof bufferOrString === "string";
-        const workbook = XLSX.read(bufferOrString, { type: isString ? "string" : "array" });
+        const workbook = XLSX.read(bufferOrString, {
+          type: isString ? "string" : "array",
+        });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        
+
         const allData = XLSX.utils.sheet_to_json(sheet);
-        
+
         if (allData.length === 0) {
           toast.error("ไม่พบข้อมูลในไฟล์", { id: toastId });
           setIsImporting(false);
           return;
         }
 
-        const CHUNK_SIZE = 500; 
+        const CHUNK_SIZE = 500;
         const totalChunks = Math.ceil(allData.length / CHUNK_SIZE);
-        
+
         let successCount = 0;
         let lastErrorMessage = "";
 
         for (let i = 0; i < totalChunks; i++) {
           const chunk = allData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
           const currentProgress = Math.round(((i + 1) / totalChunks) * 100);
-          
-          toast.loading(`กำลังนำเข้าข้อมูล... ${currentProgress}%`, { id: toastId });
+
+          toast.loading(`กำลังนำเข้าข้อมูล... ${currentProgress}%`, {
+            id: toastId,
+          });
           setProgress(currentProgress);
 
           const result = await importMaintenanceData(chunk);
@@ -56,12 +60,17 @@ export default function ImportButton() {
         }
 
         if (successCount === 0 && lastErrorMessage) {
-          toast.error(`นำเข้าข้อมูลไม่สำเร็จ: ${lastErrorMessage}`, { id: toastId });
+          toast.error(`นำเข้าข้อมูลไม่สำเร็จ: ${lastErrorMessage}`, {
+            id: toastId,
+          });
         } else {
-          toast.success(`นำเข้าสำเร็จ (${successCount} รายการ)`, { id: toastId });
-          setTimeout(() => { window.location.reload(); }, 1500);
+          toast.success(`นำเข้าสำเร็จ (${successCount} รายการ)`, {
+            id: toastId,
+          });
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
         }
-
       } catch (error) {
         console.error("Error reading file:", error);
         toast.error("รูปแบบไฟล์ไม่ถูกต้อง", { id: toastId });
@@ -80,7 +89,7 @@ export default function ImportButton() {
       }
     };
 
-    if (file.name.toLowerCase().endsWith('.csv')) {
+    if (file.name.toLowerCase().endsWith(".csv")) {
       reader.readAsText(file, "UTF-8");
     } else {
       reader.readAsArrayBuffer(file);
@@ -89,12 +98,20 @@ export default function ImportButton() {
 
   return (
     <div>
-      <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} ref={fileInputRef} className="hidden" />
+      <input
+        type="file"
+        accept=".xlsx, .xls, .csv"
+        onChange={handleFileUpload}
+        ref={fileInputRef}
+        className="hidden"
+      />
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={isImporting}
         className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition-colors shadow-xs ${
-          isImporting ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          isImporting
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700"
         }`}
       >
         {isImporting ? `⏳ นำเข้า ${progress}%` : "นำเข้าข้อมูล"}
