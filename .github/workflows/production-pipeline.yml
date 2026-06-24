@@ -7,54 +7,65 @@ on:
     branches: ["main"]
 
 jobs:
-  production-pipeline:
-    name: 🚀 Production CI/CD Pipeline
+  quality_and_build:
+    name: 01 - Quality & Build
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Pull code from GitHub
-        uses: actions/checkout@v4
-
-      - name: ⚙️ Install Node v20 & npm cache
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
-
-      - name: 📦 Download packages (npm ci)
+      - name: 📦 Install dependencies
         run: npm ci
-
-      # --- PHASE 01: Quality Checks & Build ---
-      - name: 🧹 Check code syntax (ESLint)
+      - name: 🧹 Run ESLint
         run: npx eslint .
-
-      - name: 🏷️ Strict TypeScript type validation (tsc)
+      - name: 🏷️ Run Type Check
         run: npx tsc --noEmit
-
-      - name: 🧪 Execute Vitest unit testing
+      - name: 🧪 Run Unit Tests
         run: npm run test:coverage
-
-      - name: 🏗️ Build Next.js App
+      - name: 🏗️ Test Build
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
 
-      # --- PHASE 02: Database Migration ---
+  database_migration:
+    name: 02 - Database Migration
+    needs: quality_and_build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: 📦 Install dependencies
+        run: npm ci
       - name: 🗄️ Database Push (Drizzle to Prod)
         run: npx drizzle-kit push
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
 
-      # --- PHASE 03: Playwright Smoke Test (Read-Only) ---
+  smoke_tests:
+    name: 03 - Smoke Tests
+    needs: database_migration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: 📦 Install dependencies
+        run: npm ci
       - name: 🎭 Install Playwright Browsers
         run: npx playwright install --with-deps
-
       - name: 🕵️ Run Playwright Smoke Test (Read-Only)
         run: npx playwright test tests/smoke.spec.ts
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-
       - name: 📊 Upload Playwright Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -63,22 +74,27 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      # --- PHASE 04: Vercel Production Deployment ---
+  vercel_deployment:
+    name: 04 - Vercel Prod Deploy
+    needs: smoke_tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: 🚀 Install Vercel CLI
         run: npm install --global vercel@latest
-
       - name: 🔗 Pull Vercel Environment Information (Production)
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
       - name: 📦 Build Project for Vercel (Production)
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
       - name: 🌐 Deploy to Vercel Production
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
