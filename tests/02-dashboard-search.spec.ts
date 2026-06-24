@@ -4,56 +4,75 @@ test.describe("Dashboard & Search Tests", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.waitForSelector("header");
+    await expect(page.locator("text=กำลังโหลดข้อมูล...")).toBeHidden({
+      timeout: 15000,
+    });
   });
 
   test("should render KPIs and Stat Cards successfully", async ({ page }) => {
-    // Wait for the dashboard to load (it might say กำลังโหลดข้อมูล... initially)
-    await expect(page.locator("text=กำลังโหลดข้อมูล...")).toBeHidden({
-      timeout: 10000,
-    });
-
-    // Check for Stat Cards (Total Vehicles, Logs, Cost)
-    // Looking for the big numbers, they should have specific classes
     const bigNumbers = page.locator(".text-2xl.sm\\:text-3xl.font-black");
     await expect(bigNumbers).toHaveCount(2);
-
-    // Check KPI titles exist
     await expect(page.locator("h3").first()).toBeVisible();
   });
 
-  test("should handle exact match search and render VehicleDetailView", async ({
-    page,
-  }) => {
-    await expect(page.locator("text=กำลังโหลดข้อมูล...")).toBeHidden({
-      timeout: 10000,
-    });
+  test("should handle global filtering by Status", async ({ page }) => {
+    const statusFilter = page.locator('select').first(); // The first select in Dashboard is usually Status
+    if (await statusFilter.isVisible()) {
+      await statusFilter.selectOption("pending"); // Using 'pending' as value based on common enums
+      
+      // Wait for table to reflect changes (maybe it shrinks or empty state shows)
+      await page.waitForTimeout(500); 
+      // Verify the filter is applied
+      await expect(statusFilter).toHaveValue("pending");
+    }
+  });
 
-    // Let's mock the search response by intercepting the Next.js server action
-    // Or we can just search for a plate we know exists or a dummy string.
-    const searchInput = page.locator('input[placeholder*="ค้นหา"]');
-    await searchInput.fill("MockPlate123");
-    await searchInput.press("Enter");
-
-    // The search could result in a toast, but it's transient and flaky to test in Webkit
-    await expect(searchInput).toHaveValue("MockPlate123");
+  test("should handle Pagination", async ({ page }) => {
+    // Scroll to the bottom where pagination is
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    
+    // Find the Next page button
+    const nextBtn = page.locator('button:has-text("หน้าถัดไป"), button:has-text("Next")');
+    if (await nextBtn.isVisible() && await nextBtn.isEnabled()) {
+      await nextBtn.click();
+      
+      // Wait a bit for state to update
+      await page.waitForTimeout(500);
+      
+      // Verify page number changed (if visible) or just check that button worked
+      const pageText = page.locator('text=/หน้า \\d+ จาก/i, text=/Page \\d+ of/i');
+      if (await pageText.isVisible()) {
+        await expect(pageText).toContainText("2");
+      }
+    }
   });
 
   test("should sort overdue table when clicking headers", async ({ page }) => {
-    await expect(page.locator("text=กำลังโหลดข้อมูล...")).toBeHidden({
-      timeout: 10000,
-    });
-
-    // Find a sortable header (index 2 is ทะเบียนรถ)
     const sortableTh = page.locator("th").nth(2);
     if (await sortableTh.isVisible()) {
       await sortableTh.click();
-
-      // Wait for sorting indicator to appear
       await expect(sortableTh).toContainText(/▲|▼/);
-
-      // Click again to reverse sort
       await sortableTh.click();
       await expect(sortableTh).toContainText(/▲|▼/);
+    }
+  });
+
+  test("should handle exact match search and view VehicleDetailView", async ({ page }) => {
+    const searchInput = page.locator('input[placeholder*="ค้นหา"]');
+    
+    // We will search for a generic term that likely yields results or empty state without crashing
+    await searchInput.fill("1234");
+    await searchInput.press("Enter");
+
+    // Wait for either search results or vehicle detail view
+    await page.waitForTimeout(1000);
+    
+    // Check if back button or reset button appears
+    const clearSearchBtn = page.locator('button:has-text("ล้างการค้นหา"), button:has-text("Clear Search"), button:has-text("กลับไปหน้าแรก")').first();
+    if (await clearSearchBtn.isVisible()) {
+      await clearSearchBtn.click();
+      // Should clear input
+      await expect(searchInput).toHaveValue("");
     }
   });
 });

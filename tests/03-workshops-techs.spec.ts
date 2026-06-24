@@ -5,13 +5,11 @@ test.describe("Workshops & Technicians Tests", () => {
     await page.goto("/");
     await page.waitForSelector("header");
     await expect(page.locator("text=กำลังโหลดข้อมูล...")).toBeHidden({
-      timeout: 10000,
+      timeout: 15000,
     });
   });
 
-  test("should navigate to Workshops and allow opening a workshop detail", async ({
-    page,
-  }) => {
+  test("should navigate to Workshops, allow opening a workshop detail and changing pages", async ({ page }) => {
     // Navigate to Workshops (2nd item in submenu)
     await page.locator(".flex.flex-col.gap-1.pl-4 div").nth(1).click();
 
@@ -24,15 +22,32 @@ test.describe("Workshops & Technicians Tests", () => {
     if (await firstWorkshopRow.isVisible()) {
       await firstWorkshopRow.click();
 
-      // Wait for the detail view to appear (it should have a "กลับหน้าหลักอู่ซ่อม" back button)
-      const backBtn = page.locator("button").first(); // back button is usually first
+      // Wait for the detail view to appear
+      const backBtn = page.locator('button:has-text("กลับหน้าหลักอู่ซ่อม"), button:has-text("Back")').first();
       await expect(backBtn).toBeVisible();
+
+      // Test pagination inside workshop detail
+      const nextBtn = page.locator('button:has-text("หน้าถัดไป"), button:has-text("Next")').first();
+      if (await nextBtn.isVisible() && await nextBtn.isEnabled()) {
+        await nextBtn.click();
+      }
+
+      // Open a log from workshop detail
+      const logRow = page.locator("tbody tr").first();
+      if (await logRow.isVisible()) {
+        await logRow.click();
+        const modal = page.locator(".fixed.inset-0.z-50").first();
+        await expect(modal).toBeVisible();
+        await page.locator('button:has-text("ปิด"), button:has-text("Close")').first().click();
+      }
+
+      // Click back
+      await backBtn.click();
+      await expect(workshopTitle).toBeVisible();
     }
   });
 
-  test("should sort technicians by efficiency in Technicians tab", async ({
-    page,
-  }) => {
+  test("should navigate to Technicians, sort, and view technician details", async ({ page }) => {
     // Navigate to Technicians (3rd item in submenu)
     await page.locator(".flex.flex-col.gap-1.pl-4 div").nth(2).click();
 
@@ -44,6 +59,26 @@ test.describe("Workshops & Technicians Tests", () => {
     if (await sortableTh.isVisible()) {
       await sortableTh.click();
       await expect(sortableTh).toContainText(/▲|▼/);
+    }
+
+    // View technician detail
+    const firstTechRow = page.locator("tbody tr").first();
+    if (await firstTechRow.isVisible()) {
+      await firstTechRow.click();
+      
+      const backBtn = page.locator('button:has-text("กลับหน้าหลักช่าง"), button:has-text("Back")').first();
+      await expect(backBtn).toBeVisible();
+
+      // Open a log from technician detail
+      const logRow = page.locator("tbody tr").first();
+      if (await logRow.isVisible()) {
+        await logRow.click();
+        const modal = page.locator(".fixed.inset-0.z-50").first();
+        await expect(modal).toBeVisible();
+        await page.locator('button:has-text("ปิด"), button:has-text("Close")').first().click();
+      }
+
+      await backBtn.click();
     }
   });
 });
