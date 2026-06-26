@@ -49,13 +49,9 @@ jobs:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
 
   smoke_tests:
-    name: 03 - Smoke Tests (${{ matrix.browser }})
+    name: 03 - Smoke Tests (All Browsers)
     needs: database_migration
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,25 +61,19 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
       - name: 🎭 Install Playwright Browsers
-        run: npx playwright install ${{ matrix.browser }} --with-deps
+        run: npx playwright install chromium firefox webkit --with-deps
       - name: 🏗️ Build Next.js App
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      - name: 🕵️ Run Playwright Smoke Test & Sentry Check (Read-Only)
-        run: npx playwright test tests/smoke.spec.ts tests/07-sentry-integration.spec.ts --project=${{ matrix.browser }}
+      - name: 🕵️ Run Smoke Test & Sentry Check (3 browsers parallel)
+        run: npx playwright test tests/smoke.spec.ts tests/07-sentry-integration.spec.ts --config=playwright.config.cjs
         env:
+          CI: "true"
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-      - name: 📊 Upload Playwright Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report-production-${{ matrix.browser }}
-          path: playwright-report/
-          retention-days: 7
 
   vercel_deployment:
     name: 04 - Vercel Prod Deploy
