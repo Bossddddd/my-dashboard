@@ -24,12 +24,25 @@ jobs:
         run: npx tsc --noEmit
       - name: 🧪 Run Unit Tests
         run: npm run test:coverage
+      - name: 📦 Cache Next.js Build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - name: 🏗️ Test Build
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      - name: 📤 Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next
+          retention-days: 1
 
   database_migration:
     name: 02 - Database Migration
@@ -60,14 +73,22 @@ jobs:
           cache: "npm"
       - name: 📦 Install dependencies
         run: npm ci
+      - name: 🗄️ Cache Playwright Browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: 🎭 Install Playwright Browsers
-        run: npx playwright install chromium firefox webkit --with-deps
-      - name: 🏗️ Build Next.js App
-        run: npm run build
-        env:
-          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium firefox webkit
+      - name: 🔧 Install Playwright System Dependencies
+        run: npx playwright install-deps
+      - name: 📥 Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next
       - name: 🤖 Run Playwright E2E Tests (3 browsers parallel)
         run: npx playwright test --config=playwright.config.cjs
         env:
