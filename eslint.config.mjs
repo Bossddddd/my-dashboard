@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright config (CJS - uses require())
+    "playwright.config.cjs",
   ]),
   {
     rules: {
