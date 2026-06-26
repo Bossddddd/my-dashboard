@@ -37,13 +37,6 @@ jobs:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      - name: 📤 Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nextjs-build
-          path: .next
-          retention-days: 1
-
   database_migration:
     name: 02 - Database Migration
     needs: quality_and_build
@@ -84,11 +77,19 @@ jobs:
         run: npx playwright install chromium firefox webkit
       - name: 🔧 Install Playwright System Dependencies
         run: npx playwright install-deps
-      - name: 📥 Download Build Artifact
-        uses: actions/download-artifact@v4
+      - name: 📦 Cache Next.js Build
+        uses: actions/cache@v4
         with:
-          name: nextjs-build
-          path: .next
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - name: 🏗️ Build Next.js App
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - name: 🤖 Run Playwright E2E Tests (3 browsers parallel)
         run: npx playwright test --config=playwright.config.cjs
         env:
