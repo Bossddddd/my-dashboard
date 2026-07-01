@@ -1,7 +1,6 @@
 import { useLanguage } from "../../app/LanguageContext";
 import React from "react";
-import PurePieChart from "../PurePieChart";
-import { StatusBadge, PriorityBadge } from "../badges";
+
 import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
 import Pagination from "../Pagination";

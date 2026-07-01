@@ -42,7 +42,7 @@ describe("LogDetailModal", () => {
 
   const renderModal = (activeLogModal: any = mockLog, onClose = vi.fn(), onUpdate = vi.fn()) => {
     return render(
-      <LanguageProvider>
+      <LanguageProvider language="th" setLanguage={vi.fn()}>
         <LogDetailModal 
           activeLogModal={activeLogModal} 
           onClose={onClose} 

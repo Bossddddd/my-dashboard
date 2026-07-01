@@ -9,7 +9,7 @@ describe("Sidebar", () => {
 
   const renderSidebar = (activeTab: any = "dashboard") => {
     return render(
-      <LanguageProvider>
+      <LanguageProvider language="th" setLanguage={vi.fn()}>
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTabMock} />
       </LanguageProvider>
     );
