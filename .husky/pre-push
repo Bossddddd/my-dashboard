@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 echo "🚀 Running checks before push..."
-npm run lint
-npx tsc --noEmit
-npm run test
+npm.cmd run lint
+npx.cmd tsc --noEmit
+npm.cmd run test
 echo "✅ All checks passed! Pushing to GitHub..."
