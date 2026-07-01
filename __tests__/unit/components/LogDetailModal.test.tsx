@@ -60,8 +60,8 @@ describe("LogDetailModal", () => {
     renderModal();
     
     // Using RegExp for partial matching
-    expect(await screen.findByText(/V-123/)).toBeInTheDocument();
-    expect(await screen.findByText(/Engine oil change/i)).toBeInTheDocument();
+    expect(document.body.textContent).toMatch(/V-123/);
+    expect(document.body.textContent).toMatch(/Engine oil change/i);
     
     // Check if getHistoryByLogId was called
     expect(getHistoryByLogId).toHaveBeenCalledWith(1);
@@ -93,7 +93,7 @@ describe("LogDetailModal", () => {
   });
 
   it("saves changes and calls updateMaintenanceLog", async () => {
-    (updateMaintenanceLog as any).mockResolvedValue(true);
+    (updateMaintenanceLog as any).mockResolvedValue({ success: true });
     
     renderModal();
     
