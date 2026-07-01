@@ -14,7 +14,8 @@
     "db:studio:dev": "cross-env ENV_FILE=.env.development drizzle-kit studio",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "husky"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -51,6 +52,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",

@@ -1,8 +1,9 @@
 export const matchesSearchText = (query: string, ...values: unknown[]) => {
+  const lowerQuery = query.toLowerCase();
   return values.some((value) =>
     String(value ?? "")
       .toLowerCase()
-      .includes(query),
+      .includes(lowerQuery),
   );
 };
 

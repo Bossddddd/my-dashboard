@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "🚀 Running checks before push..."
+npm run lint
+npx tsc --noEmit
+npm run test
+echo "✅ All checks passed! Pushing to GitHub..."
