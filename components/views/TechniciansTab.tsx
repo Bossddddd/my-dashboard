@@ -1,16 +1,9 @@
 // @ts-nocheck
 import { useLanguage } from "../../app/LanguageContext";
 import React from "react";
-import PurePieChart from "../PurePieChart";
-import { StatusBadge, PriorityBadge } from "../badges";
-import { formatDateTime } from "../formatters";
 import { sortedArray } from "../../lib/utils";
-import Pagination from "../Pagination";
-import ExportButton from "../ExportButton";
-import { BulkPrintView } from "../BulkPrintView";
 import toast from "react-hot-toast";
 import { getAllLogsForExport } from "../../app/actions";
-import { STATUS_CONFIG, PRIORITY_CONFIG } from "../../lib/constants";
 import { TechnicianDetailView } from "./technicians/TechnicianDetailView";
 import { TechniciansSummary } from "./technicians/TechniciansSummary";
 import { TechniciansTable } from "./technicians/TechniciansTable";
