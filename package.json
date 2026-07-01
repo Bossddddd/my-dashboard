@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "db:push:dev": "cross-env ENV_FILE=.env.development drizzle-kit push",
     "db:push:prod": "cross-env ENV_FILE=.env.production drizzle-kit push",
     "db:generate:dev": "cross-env ENV_FILE=.env.development drizzle-kit generate",
