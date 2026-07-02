@@ -486,12 +486,12 @@ export async function importMaintenanceData(rows: any[]) {
       return cleanRow;
     });
 
-    const validRows = cleanRows.filter((r) => r.plate);
+    const validRows = cleanRows.filter((r) => r.plate || r["ทะเบียนรถ"]);
     if (validRows.length === 0)
       return { success: false, message: "ไม่พบข้อมูลรถในไฟล์" };
 
     const uniquePlates = [
-      ...new Set(validRows.map((r) => String(r.plate).trim())),
+      ...new Set(validRows.map((r) => String(r.plate || r["ทะเบียนรถ"]).trim())),
     ];
     let existingVehicles = await db.query.vehicles.findMany({
       where: inArray(vehicles.plate, uniquePlates),
@@ -501,7 +501,7 @@ export async function importMaintenanceData(rows: any[]) {
     const vehiclesToCreate = [];
     const seenNewPlates = new Set();
     for (const row of validRows) {
-      const plate = String(row.plate).trim();
+      const plate = String(row.plate || row["ทะเบียนรถ"]).trim();
       if (!existingPlates.has(plate) && !seenNewPlates.has(plate)) {
         vehiclesToCreate.push({
           plate: plate,
@@ -527,44 +527,91 @@ export async function importMaintenanceData(rows: any[]) {
       plateToIdMap.set(v.plate, v.id);
     }
 
-    const logsToCreate = [];
+    const providedIds = validRows
+      .map(r => r.id || r["รหัสใบงาน (ID)"] || r["รหัสใบงาน"])
+      .filter(id => id)
+      .map(id => parseInt(id, 10))
+      .filter(id => !isNaN(id));
+
+    const existingLogsInDb = providedIds.length > 0 
+      ? await db.query.maintenanceLogs.findMany({ where: inArray(maintenanceLogs.id, providedIds), columns: { id: true } })
+      : [];
+    const existingLogIds = new Set(existingLogsInDb.map(l => l.id));
+
+    let updateCount = 0;
+    let insertCount = 0;
+    const logsToInsert = [];
+
     for (const row of validRows) {
-      if (!row.description) continue;
-      const vehicleId = plateToIdMap.get(String(row.plate).trim());
+      const description = row.description || row["รายละเอียด/อาการ"];
+      if (!description) continue;
+      
+      const plate = String(row.plate || row["ทะเบียนรถ"]).trim();
+      const vehicleId = plateToIdMap.get(plate);
       if (!vehicleId) continue;
 
-      logsToCreate.push({
+      const rawId = row.id || row["รหัสใบงาน (ID)"] || row["รหัสใบงาน"];
+      const parsedId = rawId ? parseInt(rawId, 10) : null;
+      const isUpdate = parsedId && existingLogIds.has(parsedId);
+
+      // Support English/Thai mapping for STATUS and PRIORITY if needed.
+      // E.g., if status comes in as "กำลังซ่อม", it won't map correctly unless translated.
+      // But we will pass it as-is for now, or match known keys if possible.
+      // To keep it simple, we just extract.
+      
+      let statusVal = row.status || row["สถานะ"];
+      let priorityVal = row.priority || row["ความเร่งด่วน"];
+      
+      // Auto-translate back to EN keys if they are Thai, just basic ones if needed.
+      if (statusVal === "แจ้งซ่อม") statusVal = "reported";
+      if (statusVal === "กำลังดำเนินการ" || statusVal === "กำลังซ่อม") statusVal = "in_progress";
+      if (statusVal === "เสร็จสิ้น" || statusVal === "ซ่อมเสร็จแล้ว") statusVal = "completed";
+      if (statusVal === "ยกเลิก") statusVal = "cancelled";
+      
+      if (priorityVal === "ด่วนมาก (รถจอด)") priorityVal = "critical";
+      if (priorityVal === "สูง") priorityVal = "high";
+      if (priorityVal === "ปานกลาง") priorityVal = "normal";
+      if (priorityVal === "ต่ำ") priorityVal = "low";
+
+      const logData = {
         vehicleId: vehicleId,
         projectId: row.projectId ? parseInt(row.projectId) : null,
-        projectName: row.projectName ? String(row.projectName).trim() : null,
-        teamName: row.teamName ? String(row.teamName).trim() : null,
-        technicianName: row.technicianName
-          ? String(row.technicianName).trim()
-          : null,
-        priority: row.priority ? String(row.priority).trim() : "normal",
-        status: row.status ? String(row.status).trim() : "reported",
+        projectName: (row.projectName || row["โครงการ"]) ? String(row.projectName || row["โครงการ"]).trim() : null,
+        teamName: (row.teamName || row["ทีมช่าง (Team)"]) ? String(row.teamName || row["ทีมช่าง (Team)"]).trim() : null,
+        technicianName: (row.technicianName || row["ช่างผู้รับผิดชอบ"]) ? String(row.technicianName || row["ช่างผู้รับผิดชอบ"]).trim() : null,
+        priority: priorityVal ? String(priorityVal).trim() : "normal",
+        status: statusVal ? String(statusVal).trim() : "reported",
         category: row.category ? String(row.category).trim() : null,
-        description: String(row.description).trim(),
+        description: String(description).trim(),
         symptoms: row.symptoms ? String(row.symptoms).trim() : null,
-        locationLabel: row.locationLabel
-          ? String(row.locationLabel).trim()
-          : null,
+        locationLabel: row.locationLabel ? String(row.locationLabel).trim() : null,
         latitude: row.latitude ? parseFloat(row.latitude) : null,
         longitude: row.longitude ? parseFloat(row.longitude) : null,
-        cost: row.cost ? parseFloat(row.cost) : null,
-        reportedAt: parseSafeDate(row.reportedAt) || new Date(),
+        cost: (row.cost || row["ค่าใช้จ่าย (บาท)"]) ? parseFloat(row.cost || row["ค่าใช้จ่าย (บาท)"]) : null,
+        reportedAt: parseSafeDate(row.reportedAt || row["เวลาแจ้งซ่อม"]) || new Date(),
         assignedAt: parseSafeDate(row.assignedAt),
         acceptedAt: parseSafeDate(row.acceptedAt),
-        startedAt: parseSafeDate(row.startedAt),
-        completedAt: parseSafeDate(row.completedAt),
-        dueDate: parseSafeDate(row.dueDate),
-      });
+        startedAt: parseSafeDate(row.startedAt || row["เวลาเริ่มงาน"]),
+        completedAt: parseSafeDate(row.completedAt || row["เวลาทำงานเสร็จ"]),
+        dueDate: parseSafeDate(row.dueDate || row["กำหนดเสร็จตาม SLA"]),
+      };
+
+      if (isUpdate && parsedId) {
+        await db.update(maintenanceLogs)
+          .set(logData)
+          .where(eq(maintenanceLogs.id, parsedId));
+        updateCount++;
+      } else {
+        logsToInsert.push(logData);
+      }
     }
 
-    if (logsToCreate.length > 0) {
-      await db.insert(maintenanceLogs).values(logsToCreate);
+    if (logsToInsert.length > 0) {
+      await db.insert(maintenanceLogs).values(logsToInsert);
+      insertCount += logsToInsert.length;
     }
-    return { success: true, message: `นำเข้าข้อมูลสำเร็จ` };
+    
+    return { success: true, message: `นำเข้าข้อมูลสำเร็จ (อัปเดต ${updateCount} รายการ, สร้างใหม่ ${insertCount} รายการ)` };
   } catch (error) {
     return {
       success: false,
