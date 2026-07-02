@@ -1,47 +1,47 @@
 # 🚗 Dashboard Maintenance Project
 
-Welcome to the **Dashboard Maintenance** project! This is a modern, fast, and responsive web application built with **Next.js 16**, **React 19**, and styled with **Tailwind CSS**. It is designed to manage and monitor vehicle maintenance logs, technicians, and workshop data efficiently.
+Welcome to the **Dashboard Maintenance** project! This is a modern, fast, and responsive web application built with **Next.js 15**, **React 19**, and styled with **Tailwind CSS v4**. It is designed to manage and monitor vehicle maintenance logs, technicians, and workshop data efficiently.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Framework:** [Next.js (App Router)](https://nextjs.org/)
+- **Framework:** [Next.js 15 (App Router)](https://nextjs.org/)
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
 - **Database ORM:** [Drizzle ORM](https://orm.drizzle.team/)
 - **Database:** [Neon (Serverless Postgres)](https://neon.tech/)
-- **Testing:** [Vitest](https://vitest.dev/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) (Unit/Integration) + [Playwright](https://playwright.dev/) (E2E)
+- **Testing:** [Vitest](https://vitest.dev/) (Unit/Integration) & [Playwright](https://playwright.dev/) (E2E)
+- **Monitoring & Error Tracking:** [Sentry](https://sentry.io/)
 
 ---
 
-## 🚀 CI/CD Pipeline (Automated Workflows)
+## 🚀 CI/CD Pipeline (GitHub Actions)
 
-We have a robust Continuous Integration and Continuous Deployment (CI/CD) pipeline configured via **GitHub Actions** in `.github/workflows/`. The pipeline is split into 3 sequential workflows to improve modularity and observability:
+We have a robust Continuous Integration and Continuous Deployment (CI/CD) pipeline configured via **GitHub Actions**. The pipeline is strictly divided into two distinct environments to ensure stability and quality before reaching production.
 
-![CI/CD Pipeline Diagram](/ci-cd-diagram.png)
+| Workflow File | Branch | Description |
+| :--- | :--- | :--- |
+| **`staging-pipeline.yml`** | `dev` | Runs full testing and database migrations against the Test Database, and deploys to Vercel Preview. |
+| **`production-pipeline.yml`** | `main` | Runs smoke (read-only) tests against the Production Database, and deploys to Vercel Production. |
 
-| ไฟล์ Workflow | ชื่อระบบ (Job Name) | เครื่องมือ (Tools) | หน้าที่การทำงาน |
-| :--- | :--- | :--- | :--- |
-| **`01-code-quality.yml`** | **Code Quality & Build**<br>**Unit Tests** | `ESLint`, `TypeScript`<br>`Vitest`, `Next.js Build` | ทำงานทันทีเมื่อมีการ Push หรือ PR ตรวจสอบ Syntax, Types, รัน Unit Test และจำลอง Build |
-| **`02-database.yml`** | **Database Migration** | `Drizzle Kit` | ทำงานต่อจาก 01 อัปเดตโครงสร้างฐานข้อมูล (Schema) ให้พร้อมสำหรับ E2E |
-| **`03-e2e-tests.yml`** | **E2E / Read-Only Tests** | `Playwright` | รันบอททดสอบการใช้งานจริง (UI Testing) โดยฝั่ง Dev จะรัน E2E ปกติ ส่วน Production จะรันเฉพาะแบบ Read-Only |
-| *(อัตโนมัติ)* | **Deployment** | `Vercel`, `Sentry` | หากผ่านขั้นตอนทั้งหมด โค้ดจะถูกดึงไปอัปเดตบน Vercel อัตโนมัติ (พร้อมรัน Sentry Monitoring) |
+### 🔄 Pipeline Jobs (Sequential Execution)
 
-### 🔄 Workflow: Development to Production
-กระบวนการทำงานของเราถูกออกแบบให้แบ่งออกเป็น 2 ระยะ (Phase) ดังภาพรวมด้านบน:
+Both pipelines execute the following 4 jobs sequentially. If any job fails, the pipeline halts immediately.
 
-1. **Development Phase (ช่วงกำลังพัฒนา)**
-   - ทีมงานเขียนโค้ดและ **Push** งานขึ้นไปยังสาขา (Branch) `dev`
-   - ระบบ CI Pipeline (01, 02, 03) จะทำงานอัตโนมัติเพื่อตรวจสอบ Syntax, รัน Test และเช็คบั๊ก
-   - หากรันผ่านทั้งหมด Vercel จะดึงไปสร้าง **Preview Deployment** เพื่อให้ทีมงานสามารถคลิกเข้าไปทดสอบหน้าเว็บจาก URL ชั่วคราวได้
-   - *หากมีจุดไหนพัง (Fail) นักพัฒนาจะต้องแก้ไขโค้ดและ Push ใหม่ให้ผ่าน*
+1. **01 - Quality & Build:** Runs `eslint`, TypeScript type checking (`tsc --noEmit`), `vitest` unit tests with coverage, and compiles the Next.js build.
+2. **02 - Database Migration:** Pushes schema changes to Neon DB using `drizzle-kit push`.
+3. **03 - E2E / Smoke Tests:** Runs UI automated tests using **Playwright**. (Staging runs full CRUD E2E tests, while Production runs read-only Smoke tests to prevent mutating live data).
+4. **04 - Deployment:** Deploys the application directly using the Vercel CLI.
 
-2. **Production Phase (ช่วงเปิดให้คนนอกใช้งานจริง)**
-   - เมื่องานบน `dev` ถูกตรวจสอบและอนุมัติแล้ว จะทำการ **Merge (รวมโค้ด)** จาก `dev` เข้าสู่สาขา `main`
-   - ระบบ CI Pipeline จะรันซ้ำอีกครั้งบน `main` เพื่อ Double-check ความปลอดภัยสูงสุด
-   - หากเรียบร้อย Vercel จะดึงไปสร้าง **Production Deployment** เพื่ออัปเดตระบบจริงให้ทุกคนได้ใช้งานทันที
+> **✨ Detailed Job Summaries:** Our pipelines are configured to output rich markdown summaries directly on the GitHub Actions UI. This includes **Vitest Coverage Tables**, **Next.js Bundle Route Sizes**, and **Playwright Execution Logs**.
 
-> **💡 หมายเหตุ:** หากขั้นตอนใดใน CI Pipeline ทำงานล้มเหลว (Failed) ระบบจะหยุดการทำงานของ Workflow ถัดไปทันที เพื่อป้องกันไม่ให้บั๊กหลุดไปถึงผู้ใช้งานจริง
+---
+
+## 🧠 Smart Data Import (Upsert)
+
+The system features an intelligent Excel/CSV upload system for maintenance logs:
+- **Auto-Translation:** Supports uploading files with either English headers (`plate`, `description`) or Thai headers exported from the system (`ทะเบียนรถ`, `รายละเอียด/อาการ`).
+- **Smart Upsert:** If an uploaded row contains an existing Job ID (`รหัสใบงาน`), the system will safely **Update (Overwrite)** the existing record instead of duplicating it. New rows without IDs are automatically **Inserted**.
 
 ---
 
@@ -63,13 +63,13 @@ DATABASE_URL="postgresql://user:password@host/database"
 
 ### 3. Database Commands
 
-Push your schema to the database:
+Push your schema to the development database:
 
 ```bash
 npm run db:push:dev
 ```
 
-Open Drizzle Studio to view your database:
+Open Drizzle Studio to view and manage your database visually:
 
 ```bash
 npm run db:studio:dev
@@ -81,7 +81,7 @@ npm run db:studio:dev
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application running.
 
 ---
 
