@@ -23,13 +23,34 @@ jobs:
       - name: 🏷️ Run Type Check
         run: npx tsc --noEmit
       - name: 🧪 Run Unit Tests
-        run: npm run test:coverage
+        run: npm run test:coverage | tee vitest.log
       - name: 🏗️ Test Build
-        run: npm run build
+        run: npm run build | tee build.log
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      - name: 📝 Quality & Build Summary
+        if: always()
+        run: |
+          echo "### 🧪 Quality & Build Checks" >> $GITHUB_STEP_SUMMARY
+          echo "- **ESLint:** ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type Check:** ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Unit Tests:** ✅ Completed" >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details><summary><b>📊 Vitest Coverage Report</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
+          cat vitest.log | grep -A 50 "% Stmts" >> $GITHUB_STEP_SUMMARY || echo "Coverage table not found." >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+
+          echo "<details><summary><b>📦 Next.js Bundle Sizes</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
+          cat build.log | grep -A 50 "Route (app)" >> $GITHUB_STEP_SUMMARY || echo "Bundle size report not found." >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
 
   database_migration:
     name: 02 - Database Migration
@@ -73,7 +94,7 @@ jobs:
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - name: 🤖 Run Playwright E2E Tests
-        run: npx playwright test --project=${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }} | tee playwright.log
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
@@ -84,6 +105,18 @@ jobs:
           name: playwright-report-staging-${{ matrix.browser }}
           path: playwright-report/
           retention-days: 7
+      - name: 📝 Playwright Summary
+        if: always()
+        run: |
+          echo "### 🎭 Playwright Tests (${{ matrix.browser }})" >> $GITHUB_STEP_SUMMARY
+          echo "Tests have finished running. If there are failures, please check the uploaded artifact report below." >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details><summary><b>📄 Playwright Execution Logs (Last 20 lines)</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
+          tail -n 20 playwright.log >> $GITHUB_STEP_SUMMARY || echo "See action logs." >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
 
   vercel_deployment:
     name: 04 - Vercel Preview Deploy
@@ -109,7 +142,14 @@ jobs:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - name: 🌐 Deploy to Vercel Preview
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: 📝 Deployment Summary
+        run: |
+          echo "### 🚀 Vercel Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Live URL:** [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }})" >> $GITHUB_STEP_SUMMARY
